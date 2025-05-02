@@ -1,0 +1,33 @@
+# Configuration Example for Personal MS Assistant
+
+# Environment Settings
+environment:
+  onedrive_path: "C:\Users\JamesHassett\OneDriveTassehCapital\OneDrive - Tasseh Capital"
+  openmp_threads: 4
+  python_path: "./src"
+
+# Development Tools
+development:
+  logging:
+    level: "INFO"
+    directory: "logs"
+  testing:
+    pytest_options: "--verbose --cov=src --cov-report=term-missing"
+  formatting:
+    line_length: 88
+    target_version: "py38"
+
+# FAISS Configuration
+faiss:
+  index_path: "data/index/faiss.index"
+  metadata_path: "data/index/metadata.pkl"
+  id_map_path: "data/index/id_map.pkl"
+
+# Azure OpenAI Configuration
+# Note: These values should be stored in config/secrets.json
+azure:
+  openai:
+    api_version: "2024-02-15-preview"
+    endpoint: "https://your-resource.openai.azure.com/"
+    deployment_id: "your-deployment-id"
+    embedding_deployment_id: "your-embedding-deployment-id" 

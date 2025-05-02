@@ -1,0 +1,7 @@
+README.md
+setup.py
+personal_ms_chatgpt.egg-info/PKG-INFO
+personal_ms_chatgpt.egg-info/SOURCES.txt
+personal_ms_chatgpt.egg-info/dependency_links.txt
+personal_ms_chatgpt.egg-info/requires.txt
+personal_ms_chatgpt.egg-info/top_level.txt

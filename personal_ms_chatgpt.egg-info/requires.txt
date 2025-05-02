@@ -1,0 +1,4 @@
+httpx
+aiofiles
+python-dotenv
+msal

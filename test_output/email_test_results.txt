@@ -1,0 +1,447 @@
+=== Email Test Results ===
+
+
+Found 10 recent emails:
+
+====================================================================================================
+
+Email 1:
+Subject: Fw: [External] Final hours to save 36% on MailMaestro Pro
+From: James.Hassett@trovio.io
+Received: 2025-05-02T05:25:52Z
+Importance: normal
+Has Attachments: False
+
+Preview:
+--------------------------------------------------------------------------------
+________________________________
+From: Adrian - MailMaestro <email@maestrolabs.com>
+Sent: Wednesday, April 30, 2025 10:02 PM
+To: James Hassett <james.hassett@trovio.io>
+Subject: [External] Final hours to save 36% on MailMaestro Pro
+
+Offer ends ton
+--------------------------------------------------------------------------------
+
+Full Content (first 500 chars):
+================================================================================
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style type="text/css" style="display:none">
+<!--
+p
+	{margin-top:0;
+	margin-bottom:0}
+-->
+</style></head><body dir="ltr"><div style="font-family:Aptos,Aptos_EmbeddedFont,Aptos_MSFontService,Calibri,Helvetica,sans-serif; font-size:11pt; color:rgb(0,0,0)"></div><div class="elementToProof" style="font-family:Aptos,Aptos_EmbeddedFont,Aptos_MSFontService,Calibri,Helvetica,sans-serif; font-size:11pt; color:rgb(0,0,0...
+================================================================================
+
+----------------------------------------------------------------------------------------------------
+
+Email 2:
+Subject: Fw: [External] KGI Securities (Singapore) - Monthly Statement, Account KT-318
+From: James.Hassett@trovio.io
+Received: 2025-05-02T05:25:28Z
+Importance: normal
+Has Attachments: True
+
+Preview:
+--------------------------------------------------------------------------------
+________________________________
+From: KGI SECURITIES (SINGAPORE) PTE. LTD. <estatements.sg@kgi.com>
+Sent: Thursday, May 1, 2025 11:30 PM
+To: James Hassett <JAMES.HASSETT@TROVIO.IO>
+Subject: [External] KGI Securities (Singapore) - Monthly Statement,
+--------------------------------------------------------------------------------
+
+Full Content (first 500 chars):
+================================================================================
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style type="text/css" style="display:none">
+<!--
+p
+	{margin-top:0;
+	margin-bottom:0}
+-->
+</style></head><body dir="ltr"><div style="font-family:Aptos,Aptos_EmbeddedFont,Aptos_MSFontService,Calibri,Helvetica,sans-serif; font-size:11pt; color:rgb(0,0,0)"></div><div class="elementToProof" style="font-family:Aptos,Aptos_EmbeddedFont,Aptos_MSFontService,Calibri,Helvetica,sans-serif; font-size:11pt; color:rgb(0,0,0...
+================================================================================
+
+----------------------------------------------------------------------------------------------------
+
+Email 3:
+Subject: Fw: [External] Connecting James Hassett (Systematic FX PM) <> Ed Rogers (Wolver Hill)
+From: James.Hassett@trovio.io
+Received: 2025-05-02T05:25:09Z
+Importance: normal
+Has Attachments: False
+
+Preview:
+--------------------------------------------------------------------------------
+________________________________
+From: Sandeep Mand <sandeep.mand@wolverhill.com>
+Sent: Friday, May 2, 2025 11:03 AM
+To: James Hassett <James.Hassett@trovio.io>
+Cc: Patrice Conxicoeur <patrice.conxicoeur@rogersia.com>; Ed Rogers <ed.rogers@rogersia.
+--------------------------------------------------------------------------------
+
+Full Content (first 500 chars):
+================================================================================
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style type="text/css" style="display:none">
+<!--
+p
+	{margin-top:0;
+	margin-bottom:0}
+-->
+</style></head><body dir="ltr"><div style="font-family:Aptos,Aptos_EmbeddedFont,Aptos_MSFontService,Calibri,Helvetica,sans-serif; font-size:11pt; color:rgb(0,0,0)"></div><div class="elementToProof" style="font-family:Aptos,Aptos_EmbeddedFont,Aptos_MSFontService,Calibri,Helvetica,sans-serif; font-size:11pt; color:rgb(0,0,0...
+================================================================================
+
+----------------------------------------------------------------------------------------------------
+
+Email 4:
+Subject: Microsoft Build 2.0 | join sessions and level up your skills
+From: replyto@email.microsoft.com
+Received: 2025-04-30T08:35:30Z
+Importance: normal
+Has Attachments: False
+
+Preview:
+--------------------------------------------------------------------------------
+Pick your sessions, see the schedule, and make the most of your time @Build.
+
+Having trouble viewing this email? | View as a web page
+
+
+
+
+
+Microsoft Build is only three weeks away!
+
+
+Join us in Seattle, May 19–22.
+
+Be there
+
+
+Register 
+--------------------------------------------------------------------------------
+
+Full Content (first 500 chars):
+================================================================================
+<html dir="ltr" lang="en"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="x-apple-disable-message-reformatting"><meta name="format-detection" content="telephone=no"><meta name="format-detection" content="date=no"><meta name="format-detection" content="address=no"><meta name="format-detection" content="email=no"><meta content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0"><style media="all" type="text/css">
+<!--
+-->
+</styl...
+================================================================================
+
+----------------------------------------------------------------------------------------------------
+
+Email 5:
+Subject: Share your feedback about Ubuntu Server 22.04 LTS
+From: azurepromo-noreply@microsoft.com
+Received: 2025-04-29T09:27:02Z
+Importance: normal
+Has Attachments: False
+
+Preview:
+--------------------------------------------------------------------------------
+It’ll take just a few moments to rate your experience with Ubuntu Server 22.04 LTS.
+
+Rate these Azure apps to help other users discover great solutions
+
+Thank you for being a valued Azure user. Your feedback helps improve Azure for developers everywhe
+--------------------------------------------------------------------------------
+
+Full Content (first 500 chars):
+================================================================================
+<html lang="en" style="min-height:100%; background:#ffffff"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="viewport" content="width=device-width"><meta name="eventId" content="azure-marketplace-rate-azure-apps"><meta name="messageId" content="8e8d2e08-02a3-43e1-8c1a-bf8886c4f05b"><meta name="cloud" content="AZ"><style id="mediaqueries">
+<!--
+@media only screen and (max-width: 640px) {
+.wrap-dangler
+	{padding-right:10%!important}
+.wrap-dangler.small-te...
+================================================================================
+
+----------------------------------------------------------------------------------------------------
+
+Email 6:
+Subject: We’re sorry to see you go—learn how to save your data
+From: azure-noreply@microsoft.com
+Received: 2025-04-26T07:18:21Z
+Importance: normal
+Has Attachments: False
+
+Preview:
+--------------------------------------------------------------------------------
+Make sure to save any important data for future use.
+
+Save your data before it’s deleted
+
+We’re sorry to see you go. Since you cancelled your subscription, we’ve disabled your services. If you have data stored in this subscription, we’ll keep it safe 
+--------------------------------------------------------------------------------
+
+Full Content (first 500 chars):
+================================================================================
+<html lang="en" style="min-height:100%; background:#ffffff"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="viewport" content="width=device-width"><meta name="eventId" content="billing-subscription-disabled-customercancellation"><meta name="messageId" content="45a5ffd1-ad81-49a4-a5f6-72c9c763c06c"><meta name="cloud" content="AZ"><style id="mediaqueries">
+<!--
+@media only screen and (max-width: 640px) {
+.wrap-dangler
+	{padding-right:10%!important}
+.wrap...
+================================================================================
+
+----------------------------------------------------------------------------------------------------
+
+Email 7:
+Subject: [External] zoom link
+From: thomas.stolper@systemacro.com
+Received: 2025-04-24T10:53:29Z
+Importance: normal
+Has Attachments: False
+
+Preview:
+--------------------------------------------------------------------------------
+Thomas Stolper is inviting you to a scheduled Zoom meeting.
+Join Zoom Meeting
+https://us06web.zoom.us/j/87960794723?pwd=aIcMIbeYSQPHdkHTC10Bl6onfn1wty.1
+
+Meeting ID: 879 6079 4723
+Passcode: 475948
+
+---
+
+One tap mobile
++442039017895,,87960794723#
+--------------------------------------------------------------------------------
+
+Full Content (first 500 chars):
+================================================================================
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="Generator" content="Microsoft Word 15 (filtered medium)"><style>
+<!--
+@font-face
+	{font-family:"Cambria Math"}
+@font-face
+	{font-family:Calibri}
+p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin:0cm;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif}
+a:link, span.MsoHyperlink
+	{color:#0563C1;
+	text-decoration:underline}
+span.EmailStyle17
+	{font-family:"Calibri",sans-serif;
+	color:window...
+================================================================================
+
+----------------------------------------------------------------------------------------------------
+
+Email 8:
+Subject: Heads up! We noticed that you recently deleted a large number of files from your OneDrive
+From: no-reply@sharepointonline.com
+Received: 2025-04-24T03:51:08Z
+Importance: normal
+Has Attachments: False
+
+Preview:
+--------------------------------------------------------------------------------
+Files are permanently removed from the online recycle bin 93 days after they're deleted
+Hi, We noticed that you recently deleted a large number of files from your OneDrive.
+
+Files are permanently removed from the online recycle bin 93 days after they'r
+--------------------------------------------------------------------------------
+
+Full Content (first 500 chars):
+================================================================================
+<html dir="ltr" lang="en-us"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style type="text/css">
+<!--
+.headerBackgroundMsoTable
+	{border-spacing:0px;
+	width:100%}
+-->
+</style><meta name="robots" content="noindex, nofollow"><meta name="format-detection" content="telephone=no"><meta name="format-detection" content="date=no"><meta name="format-detection" content="address=no"><meta name="format-detection" content="email=no"><meta content="IE=edge"><meta name="vie...
+================================================================================
+
+----------------------------------------------------------------------------------------------------
+
+Email 9:
+Subject: [External] FX Views - Dollar Trending Down
+From: thomas.stolper@systemacro.com
+Received: 2025-04-23T11:50:50Z
+Importance: normal
+Has Attachments: False
+
+Preview:
+--------------------------------------------------------------------------------
+Hi,
+
+I have been battling with one particular question in recent weeks: Will the Dollar get a final bounce in the context of a sharp decline in risky assets?
+While investigating this more, I ended up digging more into FX flows by investors, corporates 
+--------------------------------------------------------------------------------
+
+Full Content (first 500 chars):
+================================================================================
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="Generator" content="Microsoft Word 15 (filtered medium)"><style>
+<!--
+@font-face
+	{font-family:Wingdings}
+@font-face
+	{font-family:"Cambria Math"}
+@font-face
+	{font-family:Calibri}
+p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin:0cm;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif}
+a:link, span.MsoHyperlink
+	{color:#0563C1;
+	text-decoration:underline}
+p.MsoListParagraph, li.MsoListP...
+================================================================================
+
+----------------------------------------------------------------------------------------------------
+
+Email 10:
+Subject: [External] FX Views - Dollar Trending Down
+From: thomas.stolper@systemacro.com
+Received: 2025-04-23T11:50:50Z
+Importance: normal
+Has Attachments: False
+
+Preview:
+--------------------------------------------------------------------------------
+Hi,
+
+I have been battling with one particular question in recent weeks: Will the Dollar get a final bounce in the context of a sharp decline in risky assets?
+While investigating this more, I ended up digging more into FX flows by investors, corporates 
+--------------------------------------------------------------------------------
+
+Full Content (first 500 chars):
+================================================================================
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="Generator" content="Microsoft Word 15 (filtered medium)"><style>
+<!--
+@font-face
+	{font-family:Wingdings}
+@font-face
+	{font-family:"Cambria Math"}
+@font-face
+	{font-family:Calibri}
+p.MsoNormal, li.MsoNormal, div.MsoNormal
+	{margin:0cm;
+	font-size:11.0pt;
+	font-family:"Calibri",sans-serif}
+a:link, span.MsoHyperlink
+	{color:#0563C1;
+	text-decoration:underline}
+p.MsoListParagraph, li.MsoListP...
+================================================================================
+
+----------------------------------------------------------------------------------------------------
+
+=== Testing Email Fetch Method ===
+
+get_outlook_emails retrieved 10 emails
+
+Most recent emails:
+====================================================================================================
+
+Email 1:
+Subject: Fw: [External] Final hours to save 36% on MailMaestro Pro
+From: James.Hassett@trovio.io
+Received: 2025-05-02 05:25:52+00:00
+Has Attachments: False
+Importance: normal
+
+Preview:
+--------------------------------------------------------------------------------
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style type="text/css" style="display:none">
+<!--
+p
+	{margin-top:0;
+	margin-bottom:0}
+-->
+</style></head><body di...
+--------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+
+Email 2:
+Subject: Fw: [External] KGI Securities (Singapore) - Monthly Statement, Account KT-318
+From: James.Hassett@trovio.io
+Received: 2025-05-02 05:25:28+00:00
+Has Attachments: True
+Importance: normal
+
+Preview:
+--------------------------------------------------------------------------------
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style type="text/css" style="display:none">
+<!--
+p
+	{margin-top:0;
+	margin-bottom:0}
+-->
+</style></head><body di...
+--------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+
+Email 3:
+Subject: Fw: [External] Connecting James Hassett (Systematic FX PM) <> Ed Rogers (Wolver Hill)
+From: James.Hassett@trovio.io
+Received: 2025-05-02 05:25:09+00:00
+Has Attachments: False
+Importance: normal
+
+Preview:
+--------------------------------------------------------------------------------
+<html><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><style type="text/css" style="display:none">
+<!--
+p
+	{margin-top:0;
+	margin-bottom:0}
+-->
+</style></head><body di...
+--------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+
+Email 4:
+Subject: Microsoft Build 2.0 | join sessions and level up your skills
+From: replyto@email.microsoft.com
+Received: 2025-04-30 08:35:30+00:00
+Has Attachments: False
+Importance: normal
+
+Preview:
+--------------------------------------------------------------------------------
+<html dir="ltr" lang="en"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="x-apple-disable-message-reformatting"><meta name="format-detection" content="telephone=...
+--------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+
+Email 5:
+Subject: Share your feedback about Ubuntu Server 22.04 LTS
+From: azurepromo-noreply@microsoft.com
+Received: 2025-04-29 09:27:02+00:00
+Has Attachments: False
+Importance: normal
+
+Preview:
+--------------------------------------------------------------------------------
+<html lang="en" style="min-height:100%; background:#ffffff"><head>
+<meta http-equiv="Content-Type" content="text/html; charset=utf-8"><meta name="viewport" content="width=device-width"><meta name="ev...
+--------------------------------------------------------------------------------
+
+----------------------------------------------------------------------------------------------------
+
+... and 5 more emails
