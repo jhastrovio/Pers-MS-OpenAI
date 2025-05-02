@@ -42,4 +42,4 @@ dependencies:
 poetry
 install
 `"
-## this needs to be rewritten
+## this needs to be rewritten in details
