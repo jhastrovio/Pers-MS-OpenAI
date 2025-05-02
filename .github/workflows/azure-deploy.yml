@@ -25,6 +25,9 @@ jobs:
         pip install -r requirements.txt
         pip install -r requirements-test.txt  # Install test dependencies
         
+    - name: Set PYTHONPATH
+      run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)/src" >> $GITHUB_ENV
+    
     - name: Run tests
       run: |
         pytest tests/
