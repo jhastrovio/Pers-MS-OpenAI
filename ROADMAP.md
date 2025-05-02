@@ -219,3 +219,10 @@ This project aims to create a ChatGPT Actions integration for the Personal MS As
    - Set up monitoring
    - Implement CI/CD pipeline
    - Configure security settings 
+
+1. Create Azure App Service
+2. Enable GitHub Actions in Azure Portal
+3. Configure these secrets in GitHub:
+   - AZURE_CREDENTIALS
+   - AZURE_APP_NAME
+   - AZURE_WEBAPP_PUBLISH_PROFILE 
