@@ -8,31 +8,23 @@ from src.core.auth import MSGraphAuth
 import msal
 
 @pytest.fixture
-def access_token():
-    """Dynamically acquire a Microsoft Graph access token using app credentials."""
+def msal_app():
     client_id = os.environ["CLIENT_ID"]
     client_secret = os.environ["CLIENT_SECRET"]
     tenant_id = os.environ["TENANT_ID"]
-    app = msal.ConfidentialClientApplication(
-        client_id,
-        authority=f"https://login.microsoftonline.com/{tenant_id}",
-        client_credential=client_secret,
+    return MSGraphAuth(
+        client_id=client_id,
+        client_secret=client_secret,
+        tenant_id=tenant_id
     )
-    result = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
-    if "access_token" not in result:
-        pytest.fail(f"Failed to acquire token: {result.get('error_description', 'Unknown error')}")
-    return result["access_token"]
 
 @pytest.fixture
-async def graph_client(access_token):
-    """Create a real MSGraphClient instance"""
-    auth = MSGraphAuth(access_token=access_token)
-    return MSGraphClient(auth=auth)
+async def graph_client(msal_app):
+    return MSGraphClient(auth=msal_app)
 
 @pytest.fixture
-def data_access(access_token):
-    """Create a DataAccess instance with real client"""
-    return DataAccess(access_token)
+def data_access(msal_app):
+    return DataAccess(msal_app)
 
 @pytest.mark.asyncio
 async def test_get_recent_data_with_real_api(data_access):
