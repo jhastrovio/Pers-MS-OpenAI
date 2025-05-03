@@ -5,14 +5,23 @@ from src.core.models import DataSource, SearchQuery, OutlookEmail, OneDriveFile
 from src.core.data_access import DataAccess
 from src.core.graph_client import MSGraphClient
 from src.core.auth import MSGraphAuth
+import msal
 
 @pytest.fixture
 def access_token():
-    """Get access token from environment variable"""
-    token = os.getenv("MS_GRAPH_ACCESS_TOKEN")
-    if not token:
-        pytest.fail("MS_GRAPH_ACCESS_TOKEN environment variable not set")
-    return token
+    """Dynamically acquire a Microsoft Graph access token using app credentials."""
+    client_id = os.environ["CLIENT_ID"]
+    client_secret = os.environ["CLIENT_SECRET"]
+    tenant_id = os.environ["TENANT_ID"]
+    app = msal.ConfidentialClientApplication(
+        client_id,
+        authority=f"https://login.microsoftonline.com/{tenant_id}",
+        client_credential=client_secret,
+    )
+    result = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
+    if "access_token" not in result:
+        pytest.fail(f"Failed to acquire token: {result.get('error_description', 'Unknown error')}")
+    return result["access_token"]
 
 @pytest.fixture
 async def graph_client(access_token):
