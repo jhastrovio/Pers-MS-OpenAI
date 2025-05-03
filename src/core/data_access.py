@@ -48,7 +48,7 @@ class DataAccess:
             entries.append(entry)
 
         # Get recent files
-        files = await self.client.get_onedrive_files(top=limit)
+        files = await self.client.get_onedrive_files(user_email=user_email, top=limit)
         for file in files:
             content = await self.client.get_file_content(file.id)
             # Get AI-enhanced information
@@ -132,6 +132,7 @@ class DataAccess:
         if DataSource.ONEDRIVE_FILE in sources:
             # Search in files
             files = await self.client.get_onedrive_files(
+                user_email=user_email,
                 top=query.limit,
                 skip=query.offset
             )
