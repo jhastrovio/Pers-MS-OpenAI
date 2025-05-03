@@ -1,6 +1,7 @@
 from typing import List, Optional, Dict
 from datetime import datetime
 import uuid
+import os
 from .models import DataEntry, SearchQuery, SearchResponse, DataSource, OutlookEmail, OneDriveFile
 from .graph_client import MSGraphClient
 from .auth import MSGraphAuth
@@ -15,9 +16,10 @@ class DataAccess:
     async def get_recent_data(self, limit: int = 10) -> List[DataEntry]:
         """Get recent data from both Outlook and OneDrive with AI-enhanced processing"""
         entries = []
+        user_email = os.environ["USER_EMAIL"]
         
         # Get recent emails
-        emails = await self.client.get_outlook_emails(top=limit)
+        emails = await self.client.get_outlook_emails(top=limit, user_email=user_email)
         for email in emails:
             # Get AI-enhanced information
             summary = await openai_service.summarize_text(email.body)
@@ -87,12 +89,14 @@ class DataAccess:
         
         # Search in specified sources or all if none specified
         sources = query.sources or [DataSource.OUTLOOK_EMAIL, DataSource.ONEDRIVE_FILE]
+        user_email = os.environ["USER_EMAIL"]
 
         if DataSource.OUTLOOK_EMAIL in sources:
             # Search in emails
             emails = await self.client.get_outlook_emails(
                 top=query.limit,
-                skip=query.offset
+                skip=query.offset,
+                user_email=user_email
             )
             for email in emails:
                 # Get embeddings for email content
