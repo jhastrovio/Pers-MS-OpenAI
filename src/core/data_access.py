@@ -19,7 +19,7 @@ class DataAccess:
         user_email = os.environ["USER_EMAIL"]
         
         # Get recent emails
-        emails = await self.client.get_outlook_emails(top=limit, user_email=user_email)
+        emails = await self.client.get_outlook_emails(user_email=user_email, top=limit)
         for email in emails:
             # Get AI-enhanced information
             summary = await openai_service.summarize_text(email.body)
@@ -50,7 +50,7 @@ class DataAccess:
         # Get recent files
         files = await self.client.get_onedrive_files(user_email=user_email, top=limit)
         for file in files:
-            content = await self.client.get_file_content(file.id)
+            content = await self.client.get_file_content(file.id, user_email=user_email)
             # Get AI-enhanced information
             summary = await openai_service.summarize_text(content)
             key_info = await openai_service.extract_key_info(content)
@@ -94,9 +94,9 @@ class DataAccess:
         if DataSource.OUTLOOK_EMAIL in sources:
             # Search in emails
             emails = await self.client.get_outlook_emails(
+                user_email=user_email,
                 top=query.limit,
-                skip=query.offset,
-                user_email=user_email
+                skip=query.offset
             )
             for email in emails:
                 # Get embeddings for email content
@@ -136,7 +136,7 @@ class DataAccess:
                 top=query.limit
             )
             for file in files:
-                content = await self.client.get_file_content(file.id)
+                content = await self.client.get_file_content(file.id, user_email=user_email)
                 # Get embeddings for file content
                 content_embedding = (await openai_service.get_embeddings([content]))[0]
                 # Calculate similarity

@@ -8,6 +8,7 @@ from .file_processor import FileProcessor
 from .models import OutlookEmail
 import logging
 from datetime import datetime
+import mimetypes
 
 logger = logging.getLogger(__name__)
 
@@ -185,16 +186,13 @@ class MSGraphClient:
 
     async def get_outlook_emails(
         self,
+        user_email: str,
         top: int = 10,
         skip: int = 0,
         filter: Optional[str] = None,
         max_pages: int = 1,
-        user_email: Optional[str] = None
     ) -> List[OutlookEmail]:
         """Get emails from Outlook with enhanced error handling and pagination support"""
-        if not user_email:
-            raise ValueError("user_email is required for accessing messages")
-            
         endpoint = f"users/{user_email}/messages"
         params = {
             "$top": top,
@@ -283,4 +281,27 @@ class MSGraphClient:
             "$top": top
         }
         response = await self._make_request("GET", endpoint, params=params)
-        return response.get("value", []) 
+        return response.get("value", [])
+
+    async def get_file_content(self, file_id: str, user_email: str) -> str:
+        """
+        Download file content from OneDrive by file ID.
+        Returns the file content as a string (for text files).
+        """
+        endpoint = f"users/{user_email}/drive/items/{file_id}/content"
+
+        token = self.auth.get_graph_token()
+        url = f"{self.base_url}/{endpoint}"
+        headers = {
+            "Authorization": f"Bearer {token}",
+            "Accept": "*/*"
+        }
+
+        async with httpx.AsyncClient() as client:
+            response = await client.get(url, headers=headers)
+            response.raise_for_status()
+            # Try to decode as text, fallback to bytes
+            try:
+                return response.text
+            except Exception:
+                return response.content  # For binary files 
