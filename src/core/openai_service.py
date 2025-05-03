@@ -1,6 +1,7 @@
 from typing import List, Dict, Optional
 import openai
 from .config import settings
+import logging
 
 class OpenAIService:
     def __init__(self):
@@ -9,22 +10,42 @@ class OpenAIService:
         openai.api_base = settings.azure_openai_endpoint
         openai.api_version = settings.azure_openai_api_version
         openai.api_key = settings.azure_openai_key
+        self.logger = logging.getLogger(__name__)
+
+    def chunk_text(self, text: str, chunk_size: int = 1000) -> List[str]:
+        """Split text into chunks of up to chunk_size characters."""
+        if len(text) <= chunk_size:
+            return [text]
+        # Warn if chunking is needed
+        self.logger.warning(f"Text length {len(text)} exceeds {chunk_size}, splitting into chunks.")
+        return [text[i:i+chunk_size] for i in range(0, len(text), chunk_size)]
 
     async def get_embeddings(self, texts: List[str]) -> List[List[float]]:
-        """Get embeddings for a list of texts"""
-        response = await openai.Embedding.acreate(
-            engine=settings.azure_embedding_deployment_id,
-            input=texts
-        )
-        return [item['embedding'] for item in response['data']]
+        """Get embeddings for a list of texts, chunking if needed and averaging per input."""
+        import numpy as np  # Only import if needed
+        results = []
+        for text in texts:
+            chunks = self.chunk_text(text)
+            chunk_embeddings = []
+            for chunk in chunks:
+                response = await openai.Embedding.acreate(
+                    engine=settings.azure_embedding_deployment_id,
+                    input=[chunk]
+                )
+                chunk_embeddings.append(response['data'][0]['embedding'])
+            # Average embeddings if chunked
+            if len(chunk_embeddings) > 1:
+                avg_embedding = np.mean(chunk_embeddings, axis=0).tolist()
+            else:
+                avg_embedding = chunk_embeddings[0]
+            results.append(avg_embedding)
+        return results
 
     async def summarize_text(self, text: str, max_length: int = 200) -> str:
         """Summarize a text using GPT"""
-        prompt = f"""Please provide a concise summary of the following text in {max_length} characters or less:
-
-{text}
-
-Summary:"""
+        # Log the first 500 characters of the text for debugging repetitive prompt errors
+        self.logger.warning(f"Summarizing text (first 500 chars): {text[:500]}")
+        prompt = f"""Please provide a concise summary of the following text in {max_length} characters or less:\n\n{text}\n\nSummary:"""
         
         response = await openai.ChatCompletion.acreate(
             engine=settings.azure_deployment_id,
