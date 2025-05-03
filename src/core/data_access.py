@@ -7,8 +7,7 @@ from .auth import MSGraphAuth
 from .openai_service import openai_service
 
 class DataAccess:
-    def __init__(self, access_token: str):
-        auth = MSGraphAuth(access_token=access_token)  # Create auth instance
+    def __init__(self, auth: MSGraphAuth):
         self.client = MSGraphClient(auth=auth)  # Use enhanced client
         # Cache for storing processed data
         self._cache = {}
