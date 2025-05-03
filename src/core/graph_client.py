@@ -23,12 +23,13 @@ class MSGraphClient:
         """Make an authenticated request to MS Graph API"""
         url = f"{self.base_url}/{endpoint}"
         token = self.auth.get_graph_token()
+        logger.info(f"Using token: {token[:10]}... (length: {len(token)})")
         
         async with httpx.AsyncClient() as client:
             headers = {
                 "Authorization": f"Bearer {token}",
                 "Accept": "application/json",
-                "ConsistencyLevel": "eventual"  # Added for better query support
+                "ConsistencyLevel": "eventual"
             }
             headers.update(kwargs.pop("headers", {}))
             
