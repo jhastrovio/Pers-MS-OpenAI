@@ -40,6 +40,20 @@ jobs:
         echo "AZURE_OPENAI_API_VERSION=${{ vars.AZURE_OPENAI_API_VERSION }}" >> "$GITHUB_ENV"
         echo "USER_EMAIL=${{ vars.USER_EMAIL }}" >> "$GITHUB_ENV"
   
+    - name: Debug environment variables
+      run: |
+        echo "USER_EMAIL=${USER_EMAIL}"
+        echo "AZURE_COMPLETION_MODEL=${AZURE_COMPLETION_MODEL}"
+        echo "AZURE_DEPLOYMENT_ID=${AZURE_DEPLOYMENT_ID}"
+        echo "AZURE_EMBEDDING_DEPLOYMENT_ID=${AZURE_EMBEDDING_DEPLOYMENT_ID}"
+        echo "AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}"
+        [ -z "$CLIENT_ID" ] && echo "CLIENT_ID is NOT set" || echo "CLIENT_ID is set"
+        [ -z "$CLIENT_SECRET" ] && echo "CLIENT_SECRET is NOT set" || echo "CLIENT_SECRET is set"
+        [ -z "$TENANT_ID" ] && echo "TENANT_ID is NOT set" || echo "TENANT_ID is set"
+        [ -z "$OPENAI_API_KEY" ] && echo "OPENAI_API_KEY is NOT set" || echo "OPENAI_API_KEY is set"
+        [ -z "$AZURE_OPENAI_ENDPOINT" ] && echo "AZURE_OPENAI_ENDPOINT is NOT set" || echo "AZURE_OPENAI_ENDPOINT is set"
+        [ -z "$AZURE_OPENAI_KEY" ] && echo "AZURE_OPENAI_KEY is NOT set" || echo "AZURE_OPENAI_KEY is set"
+        [ -z "$AZURE_EMBEDDING_MODEL" ] && echo "AZURE_EMBEDDING_MODEL is NOT set" || echo "AZURE_EMBEDDING_MODEL is set"
         
     - name: Set PYTHONPATH
       run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)/src" >> $GITHUB_ENV
