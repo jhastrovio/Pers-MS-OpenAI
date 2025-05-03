@@ -224,28 +224,7 @@ class DataAccess:
             return True
         return False
 
-    async def answer_question(self, question: str, context_ids: List[str]) -> str:
+    async def answer_question(self, question: str, context: str) -> str:
         """Answer a question about specific content"""
-        context_parts = []
-        urls = []  # Store URLs for reference
-        
-        for context_id in context_ids:
-            # Try to find the content in cache
-            if context_id in self._cache:
-                entry = self._cache[context_id]
-                context_parts.append(entry.content)
-                if entry.metadata and "url" in entry.metadata:
-                    urls.append(entry.metadata["url"])
-            else:
-                # If not in cache, try to fetch from source
-                # This is a simplified version - you might want to implement proper source lookup
-                pass
-        
-        context = "\n\n".join(context_parts)
         answer = await openai_service.answer_question(context, question)
-        
-        # Add URLs to the answer if available
-        if urls:
-            answer += "\n\nRelevant documents:\n" + "\n".join(f"- {url}" for url in urls)
-        
         return answer 
