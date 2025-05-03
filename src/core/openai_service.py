@@ -69,6 +69,9 @@ class OpenAIService:
 
     async def extract_key_info(self, text: str) -> Dict:
         """Extract key information from text"""
+        # Extract text if input looks like HTML
+        if "<html" in text.lower():
+            text = self.extract_text_from_html(text)
         prompt = f"""Extract the following information from the text:
 - Main topic
 - Key points
@@ -94,6 +97,9 @@ Format the response as a JSON object with these keys: main_topic, key_points, im
 
     async def classify_content(self, text: str, categories: List[str]) -> str:
         """Classify text into one of the given categories"""
+        # Extract text if input looks like HTML
+        if "<html" in text.lower():
+            text = self.extract_text_from_html(text)
         prompt = f"""Classify the following text into one of these categories: {', '.join(categories)}
 
 Text:
@@ -114,6 +120,9 @@ Category:"""
 
     async def analyze_sentiment(self, text: str) -> Dict:
         """Analyze the sentiment of text"""
+        # Extract text if input looks like HTML
+        if "<html" in text.lower():
+            text = self.extract_text_from_html(text)
         prompt = f"""Analyze the sentiment of the following text and provide:
 1. Overall sentiment (positive, negative, neutral)
 2. Confidence score (0-1)
@@ -137,6 +146,9 @@ Format the response as a JSON object with these keys: sentiment, confidence, key
 
     async def answer_question(self, context: str, question: str) -> str:
         """Answer a question about the given context"""
+        # Extract text if input looks like HTML
+        if "<html" in context.lower():
+            context = self.extract_text_from_html(context)
         prompt = f"""Context:
 {context}
 
