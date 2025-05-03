@@ -25,6 +25,21 @@ jobs:
         pip install -r requirements.txt
         pip install -r requirements-test.txt  # Install test dependencies
         
+    - name: Set environment variables from secrets and variables
+      run: |
+        echo "CLIENT_ID=${{ secrets.CLIENT_ID }}" >> $GITHUB_ENV
+        echo "CLIENT_SECRET=${{ secrets.CLIENT_SECRET }}" >> $GITHUB_ENV
+        echo "TENANT_ID=${{ secrets.TENANT_ID }}" >> $GITHUB_ENV
+        echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> $GITHUB_ENV
+        echo "AZURE_OPENAI_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }}" >> $GITHUB_ENV
+        echo "AZURE_OPENAI_KEY=${{ secrets.AZURE_OPENAI_KEY }}" >> $GITHUB_ENV
+        echo "AZURE_EMBEDDING_MODEL=${{ secrets.AZURE_EMBEDDING_MODEL }}" >> $GITHUB_ENV
+        echo "AZURE_EMBEDDING_DEPLOYMENT_ID=${{ vars.AZURE_EMBEDDING_DEPLOYMENT_ID }}" >> $GITHUB_ENV
+        echo "AZURE_COMPLETION_MODEL=${{ vars.AZURE_COMPLETION_MODEL }}" >> $GITHUB_ENV
+        echo "AZURE_DEPLOYMENT_ID=${{ vars.AZURE_DEPLOYMENT_ID }}" >> $GITHUB_ENV
+        echo "AZURE_OPENAI_API_VERSION=${{ vars.AZURE_OPENAI_API_VERSION }}" >> $GITHUB_ENV
+        echo "USER_EMAIL=${{ vars.USER_EMAIL }}" >> $GITHUB_ENV
+        
     - name: Set PYTHONPATH
       run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)/src" >> $GITHUB_ENV
     
