@@ -66,20 +66,20 @@ async def test_search_data_with_real_api(data_access):
             assert entry.metadata["url"].startswith("https://")
 
 @pytest.mark.asyncio
-async def test_answer_question_with_real_api(data_access):
+async def test_answer_with_real_api(data_access):
     """Test answer_question with real Microsoft Graph API"""
     # First get some recent entries
     entries = await data_access.get_recent_data(limit=2)
     if not entries:
         pytest.skip("No recent entries found to test with")
     
-    # Use the IDs of the recent entries
-    context_ids = [entry.id for entry in entries]
+    # Build context here, after entries is defined
+    context = "\n\n".join(entry_to_context(entry) for entry in entries)
     
     # Test with a simple question
     answer = await data_access.answer_question(
         "What is this about?",
-        context_ids
+        context
     )
     
     # Basic validation
@@ -99,7 +99,4 @@ def entry_to_context(entry, content_chars=200):
     elif entry.content:
         preview = entry.content[:content_chars]
         meta_lines.append(f"Content Preview: {preview}")
-    return "\n".join(meta_lines)
-
-# When preparing context for the LLM:
-context = "\n\n".join(entry_to_context(entry) for entry in entries) 
+    return "\n".join(meta_lines) 
