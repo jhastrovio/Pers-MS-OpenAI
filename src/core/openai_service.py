@@ -147,7 +147,10 @@ Format the response as a JSON object with these keys: sentiment, confidence, key
             temperature=0.3
         )
         
-        return eval(response.choices[0].message.content)
+        content = response.choices[0].message.content.strip()
+        # Remove code fences if present
+        content = re.sub(r"^```(?:json)?|```$", "", content, flags=re.IGNORECASE | re.MULTILINE).strip()
+        return json.loads(content)
 
     async def answer_question(self, context: str, question: str) -> str:
         """Answer a question about the given context"""
