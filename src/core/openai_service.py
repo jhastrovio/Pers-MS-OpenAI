@@ -3,6 +3,8 @@ import openai
 from .config import settings
 import logging
 from bs4 import BeautifulSoup
+import json
+import re
 
 class OpenAIService:
     def __init__(self):
@@ -93,7 +95,10 @@ Format the response as a JSON object with these keys: main_topic, key_points, im
             temperature=0.3
         )
         
-        return eval(response.choices[0].message.content)
+        content = response.choices[0].message.content.strip()
+        # Remove code fences if present
+        content = re.sub(r"^```(?:json)?|```$", "", content, flags=re.IGNORECASE | re.MULTILINE).strip()
+        return json.loads(content)
 
     async def classify_content(self, text: str, categories: List[str]) -> str:
         """Classify text into one of the given categories"""
