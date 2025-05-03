@@ -89,3 +89,17 @@ async def test_answer_question_with_real_api(data_access):
     # Check that URLs are included in the answer
     for entry in entries:
         assert entry.metadata["url"] in answer 
+
+def entry_to_context(entry, content_chars=200):
+    # Build lines from metadata
+    meta_lines = [f"{k}: {v}" for k, v in entry.metadata.items()]
+    # Prefer summary if available, else use the start of content
+    if "summary" in entry.metadata and entry.metadata["summary"]:
+        meta_lines.append(f"Summary: {entry.metadata['summary']}")
+    elif entry.content:
+        preview = entry.content[:content_chars]
+        meta_lines.append(f"Content Preview: {preview}")
+    return "\n".join(meta_lines)
+
+# When preparing context for the LLM:
+context = "\n\n".join(entry_to_context(entry) for entry in entries) 
