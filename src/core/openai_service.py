@@ -162,6 +162,7 @@ Format the response as a JSON object with these keys: sentiment, confidence, key
 
 Question: {question}
 
+If the context includes any URLs, include them in your answer.
 Answer:"""
 
         response = await openai.ChatCompletion.acreate(
