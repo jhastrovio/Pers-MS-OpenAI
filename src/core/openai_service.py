@@ -2,6 +2,7 @@ from typing import List, Dict, Optional
 import openai
 from .config import settings
 import logging
+from bs4 import BeautifulSoup
 
 class OpenAIService:
     def __init__(self):
@@ -41,9 +42,16 @@ class OpenAIService:
             results.append(avg_embedding)
         return results
 
+    def extract_text_from_html(self, html: str) -> str:
+        """Extract visible text from HTML using BeautifulSoup."""
+        soup = BeautifulSoup(html, "html.parser")
+        return soup.get_text(separator="\n", strip=True)
+
     async def summarize_text(self, text: str, max_length: int = 200) -> str:
         """Summarize a text using GPT"""
-        # Log the first 500 characters of the text for debugging repetitive prompt errors
+        # Extract text if input looks like HTML
+        if "<html" in text.lower():
+            text = self.extract_text_from_html(text)
         self.logger.warning(f"Summarizing text (first 500 chars): {text[:500]}")
         prompt = f"""Please provide a concise summary of the following text in {max_length} characters or less:\n\n{text}\n\nSummary:"""
         

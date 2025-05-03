@@ -16,4 +16,5 @@ chardet==5.2.0
 gunicorn==21.2.0
 aiofiles==24.1.0
 openai==0.28.1
-numpy==1.26.4 
+numpy==1.26.4
+beautifulsoup4==4.12.3 
