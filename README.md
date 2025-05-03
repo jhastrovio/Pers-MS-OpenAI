@@ -42,4 +42,4 @@ dependencies:
 poetry
 install
 `"
-## this needs to be rewritten in details no specif, secret and var added to Github
+## this needs to be rewritten in details no specif, secrets and var added to Github
