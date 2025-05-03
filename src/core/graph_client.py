@@ -5,7 +5,7 @@ import aiofiles
 import asyncio
 from .auth import MSGraphAuth
 from .file_processor import FileProcessor
-from .models import OutlookEmail
+from .models import OutlookEmail, OneDriveFile
 import logging
 from datetime import datetime
 import mimetypes
@@ -277,11 +277,25 @@ class MSGraphClient:
         Returns a list of file metadata dictionaries.
         """
         endpoint = f"users/{user_email}/drive/root/children"
-        params = {
-            "$top": top
-        }
+        params = {"$top": top}
         response = await self._make_request("GET", endpoint, params=params)
-        return response.get("value", [])
+        files = []
+        for item in response.get("value", []):
+            # Only process files, not folders
+            if "file" in item:
+                files.append(OneDriveFile(
+                    id=item["id"],
+                    name=item["name"],
+                    path=item.get("parentReference", {}).get("path", ""),
+                    content="",  # Will be filled in by get_file_content
+                    last_modified=datetime.fromisoformat(item["lastModifiedDateTime"].replace("Z", "+00:00")),
+                    size=item.get("size", 0),
+                    file_type=item["file"].get("mimeType", ""),
+                    created_by=item.get("createdBy", {}).get("user", {}).get("displayName", ""),
+                    last_modified_by=item.get("lastModifiedBy", {}).get("user", {}).get("displayName", ""),
+                    web_url=item.get("webUrl", "")
+                ))
+        return files
 
     async def get_file_content(self, file_id: str, user_email: str) -> str:
         """
