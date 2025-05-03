@@ -133,8 +133,7 @@ class DataAccess:
             # Search in files
             files = await self.client.get_onedrive_files(
                 user_email=user_email,
-                top=query.limit,
-                skip=query.offset
+                top=query.limit
             )
             for file in files:
                 content = await self.client.get_file_content(file.id)

@@ -273,16 +273,14 @@ class MSGraphClient:
             logger.error(f"Error getting file URL for {file_id}: {str(e)}")
             raise
 
-    async def get_onedrive_files(self, user_email: str, top=10, skip=0):
+    async def get_onedrive_files(self, user_email: str, top=10):
         """
         List files from the root of the specified user's OneDrive.
         Returns a list of file metadata dictionaries.
         """
         endpoint = f"users/{user_email}/drive/root/children"
         params = {
-            "$top": top,
-            "$skip": skip
+            "$top": top
         }
         response = await self._make_request("GET", endpoint, params=params)
-        # Return the list of files (or empty list if none)
         return response.get("value", []) 
