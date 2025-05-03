@@ -1,83 +1,38 @@
-name: Deploy to Azure
+name: Deploy to Azure Web App
 
 on:
   push:
     branches:
-      - main
-  workflow_dispatch:
+      - main  # or your deployment branch
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - uses: actions/checkout@v4
-    
-    - name: Set up Python
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.11'
-        cache: 'pip'
-        
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-        pip install -r requirements-test.txt  # Install test dependencies
-        
-    - name: Set environment variables from secrets and variables
-      run: |
-        echo "CLIENT_ID=${{ secrets.CLIENT_ID }}" >> "$GITHUB_ENV"
-        echo "CLIENT_SECRET=${{ secrets.CLIENT_SECRET }}" >> "$GITHUB_ENV"
-        echo "TENANT_ID=${{ secrets.TENANT_ID }}" >> "$GITHUB_ENV"
-        echo "OPENAI_API_KEY=${{ secrets.OPENAI_API_KEY }}" >> "$GITHUB_ENV"
-        echo "AZURE_OPENAI_ENDPOINT=${{ secrets.AZURE_OPENAI_ENDPOINT }}" >> "$GITHUB_ENV"
-        echo "AZURE_OPENAI_KEY=${{ secrets.AZURE_OPENAI_KEY }}" >> "$GITHUB_ENV"
-        echo "AZURE_EMBEDDING_MODEL=${{ secrets.AZURE_EMBEDDING_MODEL }}" >> "$GITHUB_ENV"
-        echo "AZURE_COMPLETION_MODEL=${{ vars.AZURE_COMPLETION_MODEL }}" >> "$GITHUB_ENV"
-        echo "AZURE_OPENAI_API_VERSION=${{ vars.AZURE_OPENAI_API_VERSION }}" >> "$GITHUB_ENV"
-        echo "USER_EMAIL=${{ vars.USER_EMAIL }}" >> "$GITHUB_ENV"
-        echo "AZURE_EMBEDDING_DEPLOYMENT_ID=${{ vars.AZURE_EMBEDDING_DEPLOYMENT_ID }}" >> "$GITHUB_ENV"
-        echo "AZURE_DEPLOYMENT_ID=${{ vars.AZURE_DEPLOYMENT_ID }}" >> "$GITHUB_ENV"
-  
-    - name: Debug environment variables
-      run: |
-        echo "USER_EMAIL=${USER_EMAIL}"
-        echo "AZURE_COMPLETION_MODEL=${AZURE_COMPLETION_MODEL}"
-        echo "AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION}"
-        echo "AZURE_EMBEDDING_DEPLOYMENT_ID=${AZURE_OPENAI_API_VERSION}"
-        echo "AZURE_DEPLOYMENT_ID=${AZURE_DEPLOYMENT_ID}"
-        [ -z "$CLIENT_ID" ] && echo "CLIENT_ID is NOT set" || echo "CLIENT_ID is set"
-        [ -z "$CLIENT_SECRET" ] && echo "CLIENT_SECRET is NOT set" || echo "CLIENT_SECRET is set"
-        [ -z "$TENANT_ID" ] && echo "TENANT_ID is NOT set" || echo "TENANT_ID is set"
-        [ -z "$OPENAI_API_KEY" ] && echo "OPENAI_API_KEY is NOT set" || echo "OPENAI_API_KEY is set"
-        [ -z "$AZURE_OPENAI_ENDPOINT" ] && echo "AZURE_OPENAI_ENDPOINT is NOT set" || echo "AZURE_OPENAI_ENDPOINT is set"
-        [ -z "$AZURE_OPENAI_KEY" ] && echo "AZURE_OPENAI_KEY is NOT set" || echo "AZURE_OPENAI_KEY is set"
-        [ -z "$AZURE_EMBEDDING_MODEL" ] && echo "AZURE_EMBEDDING_MODEL is NOT set" || echo "AZURE_EMBEDDING_MODEL is set"
-        
-    - name: Set PYTHONPATH
-      run: echo "PYTHONPATH=$PYTHONPATH:$(pwd)/src" >> $GITHUB_ENV
-    
-    - name: Run tests
-      run: |
-        pytest tests/
-        
-    - name: Azure Login
-      uses: azure/login@v1
-      with:
-        creds: ${{secrets.AZURE_CREDENTIALS}}
-        
-    - name: Deploy to Azure App Service
-      uses: azure/webapps-deploy@v3
-      with:
-        app-name: ${{secrets.AZURE_APP_NAME}}
-        publish-profile: ${{secrets.AZURE_WEBAPP_PUBLISH_PROFILE}}
-        
-    - name: Configure App Settings
-      uses: azure/CLI@v1
-      with:
-        inlineScript: |
-          az webapp config appsettings set \
-            --name ${{secrets.AZURE_APP_NAME}} \
-            --resource-group PersonalMSA-RG \
-            --settings ENVIRONMENT="production" 
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Login to Azure using OIDC
+        uses: azure/login@v1
+        with:
+          client-id: ${{ secrets.AZURE_CLIENT_ID }}
+          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: personalmsa-api         # Replace with your Azure Web App name
+          slot-name: production             # Or your slot if not production
+          package: . 
