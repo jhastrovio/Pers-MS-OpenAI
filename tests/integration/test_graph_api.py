@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 from datetime import datetime
 import pytest
-from src.core.auth import MSGraphAuth
-from src.core.graph_client import MSGraphClient
+from core.auth import MSGraphAuth
+from core.graph_client import MSGraphClient
 import logging
 
 logger = logging.getLogger(__name__)

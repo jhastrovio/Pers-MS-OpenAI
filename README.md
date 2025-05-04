@@ -42,4 +42,3 @@ dependencies:
 poetry
 install
 `"
-## this needs to be rewri#tten in detail not specific and secrets and var added to Githu  lat ?
