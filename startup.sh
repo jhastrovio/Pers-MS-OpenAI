@@ -1,4 +1,5 @@
 #!/bin/bash
+set -x
 
 # Start Gunicorn
-gunicorn src.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:8000 
+gunicorn -w 1 -k uvicorn.workers.UvicornWorker app:app 
