@@ -1,10 +1,10 @@
 import pytest
 import os
 from datetime import datetime, timedelta
-from src.core.models import DataSource, SearchQuery, OutlookEmail, OneDriveFile
-from src.core.data_access import DataAccess
-from src.core.graph_client import MSGraphClient
-from src.core.auth import MSGraphAuth
+from core.models import DataSource, SearchQuery, OutlookEmail, OneDriveFile
+from core.data_access import DataAccess
+from core.graph_client import MSGraphClient
+from core.auth import MSGraphAuth
 import msal
 
 @pytest.fixture
