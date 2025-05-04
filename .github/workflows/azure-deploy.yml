@@ -39,4 +39,3 @@ jobs:
         with:
           app-name: personalmsa-api         # Replace with your Azure Web App name
           slot-name: production             # Or your slot if not production
-          package: .
