@@ -42,4 +42,4 @@ dependencies:
 poetry
 install
 `"
-## this needs to be rewritten in details no specific, secrets and var added to Githu  last ?
+## this needs to be rewritten in details no specific and  secrets and var added to Githu  last ?
