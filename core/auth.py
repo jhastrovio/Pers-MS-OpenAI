@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 import msal
 from pathlib import Path
 import json
-from .config import settings
+from core.config import settings
 import logging
 
 logging.basicConfig(level=logging.INFO)

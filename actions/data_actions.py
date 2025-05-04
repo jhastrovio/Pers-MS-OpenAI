@@ -1,9 +1,9 @@
 import os
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
-from ..core.models import DataEntry, SearchQuery, SearchResponse, DataSource
-from ..core.data_access import DataAccess
-from ..core.auth import MSGraphAuth
+from core.models import DataEntry, SearchQuery, SearchResponse, DataSource
+from core.data_access import DataAccess
+from core.auth import MSGraphAuth
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/data", tags=["data"])

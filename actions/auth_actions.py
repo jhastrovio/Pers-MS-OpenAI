@@ -1,7 +1,7 @@
 from fastapi import APIRouter, HTTPException, Request, Response
 from typing import Optional
-from ..core.auth import auth_service
-from ..core.config import settings
+from core.auth import auth_service
+from core.config import settings
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 

@@ -2,8 +2,8 @@ import asyncio
 import json
 from pathlib import Path
 from datetime import datetime
-from ..core.auth import MSGraphAuth
-from ..core.graph_client import MSGraphClient
+from core.auth import MSGraphAuth
+from core.graph_client import MSGraphClient
 
 async def load_config():
     """Load configuration from config/secrets.json"""

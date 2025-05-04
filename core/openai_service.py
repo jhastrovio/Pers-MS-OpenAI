@@ -1,6 +1,6 @@
 from typing import List, Dict, Optional
 import openai
-from .config import settings
+from core.config import settings
 import logging
 from bs4 import BeautifulSoup
 import json

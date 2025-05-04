@@ -3,9 +3,9 @@ import httpx
 from pathlib import Path
 import aiofiles
 import asyncio
-from .auth import MSGraphAuth
-from .file_processor import FileProcessor
-from .models import OutlookEmail, OneDriveFile
+from core.auth import MSGraphAuth
+from core.file_processor import FileProcessor
+from core.models import OutlookEmail, OneDriveFile
 import logging
 from datetime import datetime
 import mimetypes

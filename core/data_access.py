@@ -2,10 +2,10 @@ from typing import List, Optional, Dict
 from datetime import datetime
 import uuid
 import os
-from .models import DataEntry, SearchQuery, SearchResponse, DataSource, OutlookEmail, OneDriveFile
-from .graph_client import MSGraphClient
-from .auth import MSGraphAuth
-from .openai_service import openai_service
+from core.models import DataEntry, SearchQuery, SearchResponse, DataSource, OutlookEmail, OneDriveFile
+from core.graph_client import MSGraphClient
+from core.auth import MSGraphAuth
+from core.openai_service import openai_service
 
 class DataAccess:
     def __init__(self, auth: MSGraphAuth):
