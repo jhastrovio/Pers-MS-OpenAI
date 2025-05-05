@@ -1,7 +1,23 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Depends, HTTPException, status, Request
 from fastapi.middleware.cors import CORSMiddleware
 from actions.data_actions import router as data_router
 from actions.auth_actions import router as auth_router
+import os
+from dotenv import load_dotenv
+
+# Load environment variables from .env file
+load_dotenv()
+
+# API key dependency
+API_KEY = os.getenv("API_KEY")
+
+def api_key_auth(request: Request):
+    api_key = request.headers.get("X-API-Key")
+    if not api_key or api_key != API_KEY:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or missing API Key",
+        )
 
 app = FastAPI(
     title="Personal MS Assistant ChatGPT Actions",
@@ -20,7 +36,7 @@ app.add_middleware(
 
 # Include routers
 app.include_router(auth_router)
-app.include_router(data_router)
+app.include_router(data_router, dependencies=[Depends(api_key_auth)])
 
 @app.get("/")
 async def root():

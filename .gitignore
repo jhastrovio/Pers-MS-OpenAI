@@ -1,7 +1,7 @@
 ﻿__pycache__/
 *.py[cod]
 *.class
-.env
+# .env
 .venv
 .coverage
 logs/
