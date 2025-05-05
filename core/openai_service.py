@@ -58,7 +58,7 @@ class OpenAIService:
         prompt = f"""Please provide a concise summary of the following text in {max_length} characters or less:\n\n{text}\n\nSummary:"""
         
         response = await openai.ChatCompletion.acreate(
-            engine=settings.azure_deployment_id,
+            engine=settings.azure_completion_deployment_id,
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that summarizes text concisely."},
                 {"role": "user", "content": prompt}
@@ -87,7 +87,7 @@ Text:
 Format the response as a JSON object with these keys: main_topic, key_points, important_dates, people_involved, action_items"""
 
         response = await openai.ChatCompletion.acreate(
-            engine=settings.azure_deployment_id,
+            engine=settings.azure_completion_deployment_id,
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that extracts structured information from text."},
                 {"role": "user", "content": prompt}
@@ -113,7 +113,7 @@ Text:
 Category:"""
 
         response = await openai.ChatCompletion.acreate(
-            engine=settings.azure_deployment_id,
+            engine=settings.azure_completion_deployment_id,
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that classifies text into categories."},
                 {"role": "user", "content": prompt}
@@ -139,7 +139,7 @@ Text:
 Format the response as a JSON object with these keys: sentiment, confidence, key_phrases"""
 
         response = await openai.ChatCompletion.acreate(
-            engine=settings.azure_deployment_id,
+            engine=settings.azure_completion_deployment_id,
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that analyzes text sentiment."},
                 {"role": "user", "content": prompt}
@@ -166,7 +166,7 @@ If the context includes any URLs, include them in your answer.
 Answer:"""
 
         response = await openai.ChatCompletion.acreate(
-            engine=settings.azure_deployment_id,
+            engine=settings.azure_completion_deployment_id,
             messages=[
                 {"role": "system", "content": "You are a helpful assistant that answers questions based on the given context."},
                 {"role": "user", "content": prompt}

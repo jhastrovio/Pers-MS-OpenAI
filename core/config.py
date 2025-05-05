@@ -14,11 +14,9 @@ class Settings(BaseSettings):
     openai_api_key: str
     azure_openai_endpoint: str
     azure_openai_key: str
-    azure_embedding_model: str
     azure_embedding_deployment_id: str
-    azure_completion_model: str
-    azure_deployment_id: str
     azure_openai_api_version: str
+    azure_completion_deployment_id: str
     
     # Token settings
     TOKEN_EXPIRY_BUFFER: int = 300  # 5 minutes buffer for token expiry
