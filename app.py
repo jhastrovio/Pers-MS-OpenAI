@@ -4,6 +4,7 @@ from actions.data_actions import router as data_router
 from actions.auth_actions import router as auth_router
 import os
 from dotenv import load_dotenv
+from fastapi.security import APIKeyHeader
 
 # Load environment variables from .env file
 load_dotenv()
@@ -11,8 +12,11 @@ load_dotenv()
 # API key dependency
 API_KEY = os.getenv("API_KEY")
 
-def api_key_auth(request: Request):
-    api_key = request.headers.get("X-API-Key")
+# API key security scheme for Swagger UI
+api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
+
+# API key dependency using FastAPI's security utility
+async def api_key_auth(api_key: str = Depends(api_key_header)):
     if not api_key or api_key != API_KEY:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
