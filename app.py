@@ -10,7 +10,7 @@ from fastapi.security import APIKeyHeader
 load_dotenv()
 
 # API key dependency
-API_KEY = os.getenv("API_KEY")
+API_KEY = os.getenv("P_Deploy_API_Key")
 
 # API key security scheme for Swagger UI
 api_key_header = APIKeyHeader(name="X-API-Key", auto_error=False)
