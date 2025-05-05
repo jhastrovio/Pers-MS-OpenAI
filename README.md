@@ -1,44 +1,38 @@
-﻿# Personal MS ChatGPT Action
+﻿# Personal MS Assistant ChatGPT Actions
 
-ChatGPT Action API for accessing personal Microsoft data.
+A FastAPI-based API for integrating ChatGPT Actions with your personal Microsoft data and assistant capabilities.
+
+## Features
+- Secure, modular FastAPI server
+- Real data access endpoints
+- Simple authentication (API key or JWT)
+- OpenAPI schema for ChatGPT integration
 
 ## Setup
-1. Install dependencies:
-`ash
-poetry install
-``n
-2. Configure environment:
-- Copy .env.example to .env`n- Update configuration in config/default.py`n
-3. Run development server:
-`ash
-./dev_start.ps1
-``n
-## Testing
-`ash
-poetry run pytest
-`" | Out-File -FilePath 
-README.md -Encoding utf8
-echo #
-Personal
-MS
-ChatGPT
-Action
+1. **Clone the repository**
+2. **Create a virtual environment:**
+   ```bash
+   python -m venv .venv
+   source .venv/bin/activate  # On Windows: .venv\Scripts\activate
+   ```
+3. **Install dependencies:**
+   ```bash
+   pip install -r requirements.txt
+   ```
+4. **Configure environment:**
+   - Copy `.env.example` to `.env` (if available) or create a `.env` file
+   - Fill in required secrets and config values
 
-ChatGPT
-Action
-API
-for
-accessing
-personal
-Microsoft
-data.
+## Running the Server
+```bash
+python app.py
+```
+The API will be available at `http://localhost:8000` (see `/docs` for OpenAPI UI).
 
-##
-Setup
-1.
-Install
-dependencies:
-`ash
-poetry
-install
-`"
+## Running Tests
+```bash
+pytest
+```
+
+## More Information
+See [ROADMAP.md](./ROADMAP.md) for project goals, architecture, and detailed checklist.

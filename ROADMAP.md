@@ -3,6 +3,35 @@
 ## Project Overview
 This project aims to create a ChatGPT Actions integration for the Personal MS Assistant, enabling seamless interaction between ChatGPT and the assistant's capabilities. The integration will allow ChatGPT to access and manipulate data through a well-defined API interface.
 
+## End-to-End MVP Outline & Checklist
+
+### 1. FastAPI Server
+- [x] FastAPI app is created and running
+- [x] CORS is configured (allowing ChatGPT to access the API)
+- [x] Root endpoint ("/") returns a simple status message
+
+### 2. Authentication (Basic)
+- [ ] Choose and implement a simple authentication method:
+  - [ ] API key in header, or
+  - [ ] JWT-based (if you prefer)
+- [ ] Protect at least one endpoint with authentication
+
+### 3. Data Action Endpoint
+- [ ] Implement a basic data action (e.g., GET `/data/recent`) using real data
+- [ ] Ensure it returns real data in a clear, structured format
+
+### 4. OpenAPI Documentation
+- [ ] Confirm `/docs` and `/openapi.json` are accessible
+- [ ] Ensure endpoints and authentication requirements are documented
+
+### 5. Environment/Config Management
+- [ ] Use environment variables for secrets/keys
+- [ ] Add .env file and python-dotenv for local development
+
+### 6. End-to-End Test
+- [ ] Test the flow: ChatGPT → API (with auth) → Data action → Response
+- [ ] Confirm ChatGPT can "see" and use your API via OpenAPI schema
+
 ## Architecture Design
 
 ### Core Components
