@@ -79,7 +79,17 @@ This project aims to create a ChatGPT Actions integration for the Personal MS As
 - [ ] Implement basic authentication
 - [ ] Create OpenAPI documentation
 
-### Phase 2: Core Actions
+### Phase 2: Structural & Feature Enhancements
+- [ ] Refactor routes by capability:
+  - `/msgraph/` (Outlook, OneDrive, Calendar)
+  - `/data/` (CSV/SQL insights)
+  - `/assist/` (LLM Q&A, summarization, analysis)
+  - `/docs/` (file upload, document Q&A)
+- [ ] Add `/docs/ask` endpoint for OneDrive-backed file Q&A
+- [ ] Improve OpenAPI descriptions for ChatGPT function call UX
+- [ ] **Checkpoint:** Discuss and possibly implement MCP (Microsoft Cloud Platform or other context-specific MCP)
+
+### Phase 3: Core Actions
 - [ ] Implement data retrieval actions
   - [ ] Get recent data
   - [ ] Search data
@@ -93,7 +103,7 @@ This project aims to create a ChatGPT Actions integration for the Personal MS As
   - [ ] Create reports
   - [ ] Perform trend analysis
 
-### Phase 3: Advanced Features
+### Phase 4: Advanced Features
 - [ ] Implement caching layer
 - [ ] Add rate limiting
 - [ ] Implement advanced search capabilities
@@ -101,7 +111,7 @@ This project aims to create a ChatGPT Actions integration for the Personal MS As
 - [ ] Implement error handling and logging
 - [ ] Add monitoring and metrics
 
-### Phase 4: Integration and Testing
+### Phase 5: Integration and Testing
 - [ ] Create ChatGPT action schema
 - [ ] Implement integration tests
 - [ ] Perform security testing
