@@ -4,6 +4,15 @@ from pathlib import Path
 from datetime import datetime
 from core.auth import MSGraphAuth
 from core.graph_client import MSGraphClient
+import os
+
+# Remove secrets.json loading, use environment variables instead
+config = {
+    "client_id": os.environ["CLIENT_ID"],
+    "client_secret": os.environ["CLIENT_SECRET"],
+    "tenant_id": os.environ["TENANT_ID"],
+    "user_email": os.environ["USER_EMAIL"]
+}
 
 async def load_config():
     """Load configuration from config/secrets.json"""

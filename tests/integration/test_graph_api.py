@@ -7,6 +7,7 @@ import pytest
 from core.auth import MSGraphAuth
 from core.graph_client import MSGraphClient
 import logging
+import os
 
 logger = logging.getLogger(__name__)
 
