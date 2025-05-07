@@ -11,26 +11,29 @@ This project aims to create a ChatGPT Actions integration for the Personal MS As
 - [x] Root endpoint ("/") returns a simple status message
 
 ### 2. Authentication (Basic)
-- [ ] Choose and implement a simple authentication method:
-  - [ ] API key in header, or
-  - [ ] JWT-based (if you prefer)
-- [ ] Protect at least one endpoint with authentication
+- [x] API key in header implemented
+- [x] Protect at least one endpoint with authentication
 
 ### 3. Data Action Endpoint
-- [ ] Implement a basic data action (e.g., GET `/data/recent`) using real data
-- [ ] Ensure it returns real data in a clear, structured format
+- [x] Implement a basic data action (e.g., GET `/data/recent`) using real data
+- [x] Ensure it returns real data in a clear, structured format
 
 ### 4. OpenAPI Documentation
-- [ ] Confirm `/docs` and `/openapi.json` are accessible
-- [ ] Ensure endpoints and authentication requirements are documented
+- [x] Confirm `/docs` and `/openapi.json` are accessible
+- [x] Ensure endpoints and authentication requirements are documented
 
 ### 5. Environment/Config Management
-- [ ] Use environment variables for secrets/keys
-- [ ] Add .env file and python-dotenv for local development
+- [x] Use environment variables for secrets/keys
+- [x] Add .env file and python-dotenv for local development
 
 ### 6. End-to-End Test
-- [ ] Test the flow: ChatGPT → API (with auth) → Data action → Response
-- [ ] Confirm ChatGPT can "see" and use your API via OpenAPI schema
+- [x] Test the flow: ChatGPT → API (with auth) → Data action → Response
+- [x] Confirm ChatGPT can "see" and use your API via OpenAPI schema
+
+**Note:**
+- OpenAI deployment environment variables now use the convention:
+  - `AZURE_COMPLETION_DEPLOYMENT_ID` for chat/completions
+  - `AZURE_EMBEDDING_DEPLOYMENT_ID` for embeddings
 
 ## Architecture Design
 
