@@ -22,8 +22,8 @@ async def callback(request: Request):
     state = request.query_params.get("state")
     if not code:
         return {"error": "No code provided"}
-    # Use the same redirect_uri as in get_auth_url for local testing
-    redirect_uri = "http://localhost:8000/auth/callback"
+    # Use the dynamic redirect_uri from settings
+    redirect_uri = settings.redirect_uri
     token_result = auth_service.get_token_from_code(code, redirect_uri)
     return token_result
 
