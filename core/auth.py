@@ -80,6 +80,23 @@ class AuthService:
         buffer_time = timedelta(seconds=300)  # 5 minutes buffer
         return datetime.utcnow() + buffer_time >= expiry_time
 
+    def get_auth_url(self, state: str = "") -> str:
+        # Construct the Azure AD OAuth2 authorization URL
+        client_id = self.client_id
+        tenant_id = self.tenant_id
+        redirect_uri = "https://personalmsa-deploy-app-e2d3crdybkbmc3b3.australiaeast-01.azurewebsites.net/auth/callback"  # Update if needed
+        scope = "openid profile email offline_access"
+        auth_url = (
+            f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize"
+            f"?client_id={client_id}"
+            f"&response_type=code"
+            f"&redirect_uri={redirect_uri}"
+            f"&response_mode=query"
+            f"&scope={scope}"
+            f"&state={state}"
+        )
+        return auth_url
+
 class MSGraphAuth:
     def __init__(self, client_id: str, client_secret: str, tenant_id: str):
         self.client_id = client_id
