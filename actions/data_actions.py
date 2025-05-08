@@ -16,6 +16,10 @@ class AddEntryRequest(BaseModel):
     content: str
     metadata: Optional[dict] = None
 
+class UpdateEntryRequest(BaseModel):
+    content: str
+    metadata: Optional[dict] = None
+
 def get_auth():
     client_id = os.environ["CLIENT_ID"]
     client_secret = os.environ["CLIENT_SECRET"]
@@ -78,14 +82,13 @@ async def add_entry(
 @router.put("/{entry_id}", response_model=DataEntry)
 async def update_entry(
     entry_id: str,
-    content: str,
-    metadata: Optional[dict] = None,
+    request: UpdateEntryRequest,
     auth: MSGraphAuth = Depends(get_auth)
 ):
     """Update an existing data entry"""
     try:
         data_access = DataAccess(auth)
-        entry = await data_access.update_entry(entry_id, content, metadata)
+        entry = await data_access.update_entry(entry_id, request.content, request.metadata)
         if not entry:
             raise HTTPException(status_code=404, detail="Entry not found")
         return entry
