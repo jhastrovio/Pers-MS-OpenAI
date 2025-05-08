@@ -13,10 +13,12 @@ class AuthService:
     def __init__(self):
         self._cache = {}
         self._token_file = Path("config/token_cache.json")
+        self.client_id = settings.client_id
+        self.tenant_id = settings.tenant_id
         self._app = msal.ConfidentialClientApplication(
-            client_id=settings.client_id,
+            client_id=self.client_id,
             client_credential=settings.client_secret,
-            authority=f"https://login.microsoftonline.com/{settings.tenant_id}",
+            authority=f"https://login.microsoftonline.com/{self.tenant_id}",
             token_cache=self._load_token_cache()
         )
 
