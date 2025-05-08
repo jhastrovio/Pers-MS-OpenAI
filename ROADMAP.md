@@ -27,8 +27,8 @@ This project aims to create a ChatGPT Actions integration for the Personal MS As
 - [x] Add .env file and python-dotenv for local development
 
 ### 6. End-to-End Test
-- [x] Test the flow: ChatGPT → API (with auth) → Data action → Response
-- [x] Confirm ChatGPT can "see" and use your API via OpenAPI schema
+- [ ] Test the flow: ChatGPT → API (with auth) → Data action → Response
+- [ ] Confirm ChatGPT can "see" and use your API via OpenAPI schema
 
 **Note:**
 - OpenAI deployment environment variables now use the convention:

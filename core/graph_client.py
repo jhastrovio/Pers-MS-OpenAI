@@ -319,3 +319,45 @@ class MSGraphClient:
                 return response.text
             except Exception:
                 return response.content  # For binary files 
+
+    async def get_outlook_email_by_id(self, user_email: str, email_id: str):
+        """Fetch a single Outlook email by its ID."""
+        endpoint = f"users/{user_email}/messages/{email_id}"
+        try:
+            data = await self._make_request("GET", endpoint)
+            return OutlookEmail(
+                id=data["id"],
+                subject=data.get("subject", ""),
+                body=data.get("body", {}).get("content", ""),
+                sender=data.get("from", {}).get("emailAddress", {}).get("address", ""),
+                recipients=[r["emailAddress"]["address"] for r in data.get("toRecipients", [])],
+                received_date=datetime.fromisoformat(data["receivedDateTime"].replace("Z", "+00:00")),
+                has_attachments=data.get("hasAttachments", False),
+                importance=data.get("importance", ""),
+                categories=data.get("categories", [])
+            )
+        except Exception as e:
+            logger.error(f"Error fetching Outlook email by ID {email_id}: {e}")
+            return None
+
+    async def get_onedrive_file_by_id(self, user_email: str, file_id: str):
+        """Fetch a single OneDrive file by its ID."""
+        endpoint = f"users/{user_email}/drive/items/{file_id}"
+        try:
+            data = await self._make_request("GET", endpoint)
+            content = await self.get_file_content(file_id, user_email=user_email)
+            return OneDriveFile(
+                id=data["id"],
+                name=data.get("name", ""),
+                path=data.get("parentReference", {}).get("path", ""),
+                content=content,
+                last_modified=datetime.fromisoformat(data["lastModifiedDateTime"].replace("Z", "+00:00")),
+                size=data.get("size", 0),
+                file_type=data.get("file", {}).get("mimeType", ""),
+                created_by=data.get("createdBy", {}).get("user", {}).get("displayName", ""),
+                last_modified_by=data.get("lastModifiedBy", {}).get("user", {}).get("displayName", ""),
+                web_url=data.get("webUrl", "")
+            )
+        except Exception as e:
+            logger.error(f"Error fetching OneDrive file by ID {file_id}: {e}")
+            return None 

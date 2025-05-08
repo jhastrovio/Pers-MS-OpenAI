@@ -198,6 +198,8 @@ class DataAccess:
         entry = DataEntry(
             id=entry_id,
             content=content,
+            source=DataSource.MANUAL,
+            source_id=entry_id,
             created_at=now,
             updated_at=now,
             metadata=metadata
@@ -224,7 +226,29 @@ class DataAccess:
             return True
         return False
 
-    async def answer_question(self, question: str, context: str) -> str:
-        """Answer a question about specific content"""
-        answer = await openai_service.answer_question(context, question)
+    async def get_entry_by_id(self, entry_id: str):
+        """Fetch a data entry by its ID from cache, Outlook, or OneDrive."""
+        # Try cache first
+        if entry_id in self._cache:
+            return self._cache[entry_id]
+        # Try Outlook
+        user_email = os.environ["USER_EMAIL"]
+        email = await self.client.get_outlook_email_by_id(user_email, entry_id)
+        if email:
+            return email
+        # Try OneDrive
+        file = await self.client.get_onedrive_file_by_id(user_email, entry_id)
+        if file:
+            return file
+        return None
+
+    async def answer_question(self, question: str, context_ids: list) -> str:
+        """Answer a question about specific content IDs."""
+        contexts = []
+        for context_id in context_ids:
+            entry = await self.get_entry_by_id(context_id)
+            if entry and hasattr(entry, 'content'):
+                contexts.append(entry.content)
+        combined_context = "\n\n".join(contexts)
+        answer = await openai_service.answer_question(combined_context, question)
         return answer 

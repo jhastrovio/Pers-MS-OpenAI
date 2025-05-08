@@ -12,6 +12,10 @@ class QuestionRequest(BaseModel):
     question: str
     context_ids: List[str]
 
+class AddEntryRequest(BaseModel):
+    content: str
+    metadata: Optional[dict] = None
+
 def get_auth():
     client_id = os.environ["CLIENT_ID"]
     client_secret = os.environ["CLIENT_SECRET"]
@@ -61,14 +65,13 @@ async def answer_question(
 
 @router.post("/", response_model=DataEntry)
 async def add_entry(
-    content: str,
-    metadata: Optional[dict] = None,
+    request: AddEntryRequest,
     auth: MSGraphAuth = Depends(get_auth)
 ):
     """Add a new data entry"""
     try:
         data_access = DataAccess(auth)
-        return await data_access.add_entry(content, metadata)
+        return await data_access.add_entry(request.content, request.metadata)
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 

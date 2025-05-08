@@ -8,12 +8,16 @@ import re
 
 class OpenAIService:
     def __init__(self):
-        # Configure OpenAI client
+        # Configure OpenAI client for completions by default
         openai.api_type = "azure"
         openai.api_base = settings.azure_openai_endpoint
         openai.api_version = settings.azure_openai_api_version
         openai.api_key = settings.azure_openai_key
         self.logger = logging.getLogger(__name__)
+        self.completion_base = settings.azure_openai_endpoint
+        self.completion_key = settings.azure_openai_key
+        self.embedding_base = settings.azure_openai_embed_endpoint
+        self.embedding_key = settings.azure_openai_embed_api_key
 
     def chunk_text(self, text: str, chunk_size: int = 1000) -> List[str]:
         """Split text into chunks of up to chunk_size characters."""
@@ -31,6 +35,9 @@ class OpenAIService:
             chunks = self.chunk_text(text)
             chunk_embeddings = []
             for chunk in chunks:
+                # Switch to embedding endpoint/key for this request
+                openai.api_base = self.embedding_base
+                openai.api_key = self.embedding_key
                 response = await openai.Embedding.acreate(
                     engine=settings.azure_embedding_deployment_id,
                     input=[chunk]
@@ -42,6 +49,9 @@ class OpenAIService:
             else:
                 avg_embedding = chunk_embeddings[0]
             results.append(avg_embedding)
+        # Restore completion endpoint/key (optional, for safety)
+        openai.api_base = self.completion_base
+        openai.api_key = self.completion_key
         return results
 
     def extract_text_from_html(self, html: str) -> str:

@@ -6,6 +6,7 @@ from enum import Enum
 class DataSource(Enum):
     OUTLOOK_EMAIL = "outlook_email"
     ONEDRIVE_FILE = "onedrive_file"
+    MANUAL = "manual"
 
 class DataEntry(BaseModel):
     id: str
