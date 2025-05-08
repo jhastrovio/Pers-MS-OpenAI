@@ -86,8 +86,8 @@ class AuthService:
         # Construct the Azure AD OAuth2 authorization URL
         client_id = self.client_id
         tenant_id = self.tenant_id
-        redirect_uri = "https://personalmsa-deploy-app-e2d3crdybkbmc3b3.australiaeast-01.azurewebsites.net/auth/callback"  # Update if needed
-        scope = "openid profile email offline_access"
+        redirect_uri = settings.redirect_uri  # Dynamic
+        scope = "openid profile email offline_access User.Read Mail.Read Files.Read"
         auth_url = (
             f"https://login.microsoftonline.com/{tenant_id}/oauth2/v2.0/authorize"
             f"?client_id={client_id}"
@@ -96,8 +96,28 @@ class AuthService:
             f"&response_mode=query"
             f"&scope={scope}"
             f"&state={state}"
+            f"&prompt=consent"
         )
         return auth_url
+
+    def get_token_from_code(self, code: str, redirect_uri: str = None) -> dict:
+        # Use MSAL to exchange the code for tokens
+        if redirect_uri is None:
+            redirect_uri = settings.redirect_uri
+        result = self._app.acquire_token_by_authorization_code(
+            code,
+            scopes=["User.Read", "Mail.Read", "Files.Read"],
+            redirect_uri=redirect_uri
+        )
+        return result
+
+    def refresh_token(self, refresh_token: str) -> dict:
+        # Use MSAL to exchange the refresh token for new tokens
+        result = self._app.acquire_token_by_refresh_token(
+            refresh_token,
+            scopes=["User.Read", "Mail.Read", "Files.Read"]
+        )
+        return result
 
 class MSGraphAuth:
     def __init__(self, client_id: str, client_secret: str, tenant_id: str):

@@ -28,6 +28,7 @@ app = FastAPI(
     description="API endpoints for ChatGPT actions integration",
     version="1.0.0",
     servers=[
+        {"url": "http://localhost:8000"},
         {"url": "https://personalmsa-deploy-app-e2d3crdybkbmc3b3.australiaeast-01.azurewebsites.net"}
     ]
 )

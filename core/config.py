@@ -23,4 +23,6 @@ class Settings(BaseSettings):
     # API settings
     API_VERSION: str = "v1.0"
 
+    redirect_uri: str = "http://localhost:8000/auth/callback"
+
 settings = Settings() 
