@@ -26,7 +26,10 @@ async def api_key_auth(api_key: str = Depends(api_key_header)):
 app = FastAPI(
     title="Personal MS Assistant ChatGPT Actions",
     description="API endpoints for ChatGPT actions integration",
-    version="1.0.0"
+    version="1.0.0",
+    servers=[
+        {"url": "https://personalmsa-deploy-app-e2d3crdybkbmc3b3.australiaeast-01.azurewebsites.net"}
+    ]
 )
 
 # Configure CORS
