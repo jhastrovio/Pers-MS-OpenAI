@@ -23,12 +23,13 @@ async def api_key_auth(api_key: str = Depends(api_key_header)):
             detail="Invalid or missing API Key",
         )
 
+SERVER_URL = os.environ["SERVER_URL"]  # Must be set in environment
 app = FastAPI(
     title="Personal MS Assistant ChatGPT Actions",
     description="API endpoints for ChatGPT actions integration",
     version="1.0.0",
     servers=[
-        {"url": "https://personalmsa-deploy-app-e2d3crdybkbmc3b3.australiaeast-01.azurewebsites.net"}
+        {"url": SERVER_URL}
     ]
 )
 

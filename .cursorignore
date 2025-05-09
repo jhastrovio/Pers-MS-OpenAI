@@ -1,0 +1,5 @@
+# Everything in this pattern is ignored…
+.env*
+# …except the main .env
+!.env
+

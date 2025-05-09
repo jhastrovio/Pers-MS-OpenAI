@@ -11,7 +11,7 @@ class OpenAIService:
         # Configure OpenAI client for completions by default
         openai.api_type = "azure"
         openai.api_base = settings.azure_openai_endpoint
-        openai.api_version = settings.azure_openai_api_version
+        openai.api_version = settings.azure_completion_api_version
         openai.api_key = settings.azure_openai_key
         self.logger = logging.getLogger(__name__)
         self.completion_base = settings.azure_openai_endpoint
@@ -38,6 +38,7 @@ class OpenAIService:
                 # Switch to embedding endpoint/key for this request
                 openai.api_base = self.embedding_base
                 openai.api_key = self.embedding_key
+                openai.api_version = settings.azure_embedding_api_version
                 response = await openai.Embedding.acreate(
                     engine=settings.azure_embedding_deployment_id,
                     input=[chunk]
@@ -52,6 +53,7 @@ class OpenAIService:
         # Restore completion endpoint/key (optional, for safety)
         openai.api_base = self.completion_base
         openai.api_key = self.completion_key
+        openai.api_version = settings.azure_completion_api_version
         return results
 
     def extract_text_from_html(self, html: str) -> str:

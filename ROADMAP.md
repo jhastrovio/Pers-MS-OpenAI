@@ -1,4 +1,75 @@
-# Personal MS Assistant ChatGPT Actions - Project Roadmap
+# Personal MS Assistant – Unified Roadmap (Rev. 09 May 2025)
+
+## Goal
+Operate a single ChatGPT assistant that searches & summarises Outlook e‑mails and OneDrive documents. The design must scale to larger data volumes and future task‑specific offshoots without re‑architecting.
+
+---
+
+### 0. Foundation (Complete, except Key Vault)
+- [x] Repository, GitHub Actions CI, pre‑commit hooks
+- [x] FastAPI skeleton (/health, /query) with MSAL OAuth (service‑principal) middleware
+- [ ] Secrets in Azure Key Vault (**deferred**)
+- [x] Application Insights attached to both dev & prod App Services
+
+---
+
+### 1. Core Orchestrator
+- [ ] Intent classifier (email | drive | mixed)
+- [ ] Response formatter with inline citations and confidence score
+- [ ] Unit + integration tests (Mock‑Graph, httpx TestClient)
+
+---
+
+### 2. Retrieval via Responses API + File Search
+- [ ] Create a single vector‑store (corp-kb, unlimited expiry)
+- [ ] Converter scripts
+- [ ] Outlook Graph delta → monthly .jsonl bundles (strip signatures)
+- [ ] OneDrive watcher → direct pass‑through of PDFs/Docs
+- [ ] ingest.py upload script – idempotent; polls status until completed
+
+---
+
+### 3. Live Sync & Budget Control
+- [ ] Azure Function (5‑min cron) runs Graph delta sync, re‑uploads changed bundles
+- [ ] "Top‑k + refine" retrieval wrapper (1 k tokens, fallback fetch on low confidence)
+- [ ] Alerts: vector_store.file_count ≥ 9 500, spikes in usage.vector_store_bytes
+
+---
+
+### 4. ChatGPT Action & UX
+- [ ] Publish Company‑Assistant action with file_search tool attached to the vector‑store
+- [ ] Front‑end badges show filename • page for each citation
+- [ ] Latency and precision dashboards in Application Insights
+
+---
+
+### 5. Security & Compliance Hardening
+- [ ] OWASP ASVS threat‑model review
+- [ ] Key‑vault rotation pipeline (90‑day schedule)
+- [ ] Purview scan to redact PII before upload
+- [ ] Audit log export to Log Analytics; cost and file‑count monitoring
+
+---
+
+### 6. Scale & Migration Path
+- [ ] Trigger: file_count > 10 000 or > 300 queries/day average
+- [ ] Evaluate Azure AI Search (hybrid BM25 + vector, ACL trimming)
+- [ ] Re‑index into new store; swap vector_store_ids in the action with zero downtime
+
+---
+
+## Acceptance Criteria
+| KPI                        | Target      |
+|----------------------------|-------------|
+| End‑to‑end latency         | ≤ 4 s       |
+| Answer precision (manual)  | ≥ 80 %      |
+| Cost per 100 queries       | < US$ 5     |
+| Vector‑store file cap      | ≤ 10 000    |
+| Security incidents         | 0           |
+
+---
+
+**Note:** Key Vault integration is deferred for now and can be added in a future phase.
 
 ## Project Overview
 This project aims to create a ChatGPT Actions integration for the Personal MS Assistant, enabling seamless interaction between ChatGPT and the assistant's capabilities. The integration will allow ChatGPT to access and manipulate data through a well-defined API interface.
@@ -27,8 +98,27 @@ This project aims to create a ChatGPT Actions integration for the Personal MS As
 - [x] Add .env file and python-dotenv for local development
 
 ### 6. End-to-End Test
-- [ ] Test the flow: ChatGPT → API (with auth) → Data action → Response
-- [ ] Confirm ChatGPT can "see" and use your API via OpenAPI schema
+- [x] Test the flow: ChatGPT → API (with auth) → Data action → Response
+- [x] Confirm ChatGPT can "see" and use your API via OpenAPI schema
+
+### 7. Documentation
+- [x] Write and publish a user guide in docs/USER_GUIDE.md
+
+### 8. Testing & User Experience
+- [ ] Collect user feedback on ChatGPT Actions integration
+- [ ] Test and refine prompt/response quality
+- [ ] Improve error messages and guidance for common issues
+- [ ] Add more helpful examples and onboarding tips
+
+### 9. Migration to Message-Centric API Responses (Responses API Style)
+- [ ] Design and add new response models (`Message`, `APIResponse`) in `core/models.py`
+- [ ] Refactor all endpoints to return `APIResponse` with `messages`, `data`, and `code`
+- [ ] Update error handling to use message-centric responses (except for 500/internal errors)
+- [ ] Update OpenAPI schema and documentation to reflect new response format
+- [ ] Refactor and expand tests for new response structure
+- [ ] Test with ChatGPT Actions/LLM to ensure messages are surfaced as intended
+- [ ] Refine user-facing messages for clarity and usefulness
+- [ ] Remove legacy response models and code paths
 
 **Note:**
 - OpenAI deployment environment variables now use the convention:

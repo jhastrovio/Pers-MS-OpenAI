@@ -1,7 +1,7 @@
 import os
 from fastapi import APIRouter, HTTPException, Depends
 from typing import List, Optional
-from core.models import DataEntry, SearchQuery, SearchResponse, DataSource
+from core.models import DataEntry, SearchQuery, SearchResponse, DataSource, Message, APIResponse
 from core.data_access import DataAccess
 from core.auth import MSGraphAuth
 from pydantic import BaseModel
@@ -42,7 +42,7 @@ async def get_recent_data(
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
-@router.post("/search", response_model=SearchResponse)
+@router.post("/search", response_model=APIResponse)
 async def search_data(
     query: SearchQuery,
     auth: MSGraphAuth = Depends(get_auth)
@@ -50,11 +50,27 @@ async def search_data(
     """Search data entries in Outlook and OneDrive with semantic search"""
     try:
         data_access = DataAccess(auth)
-        return await data_access.search_data(query)
+        search_response = await data_access.search_data(query)
+        count = len(search_response.results)
+        if count == 0:
+            message = "No results found for your search. Please try a different query."
+            code = "NO_RESULTS"
+        else:
+            message = f"Found {count} results matching your search."
+            code = "SUCCESS"
+        return APIResponse(
+            messages=[Message(role="assistant", content=message)],
+            data=search_response,
+            code=code
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return APIResponse(
+            messages=[Message(role="assistant", content=f"An error occurred: {str(e)}")],
+            data=None,
+            code="ERROR"
+        )
 
-@router.post("/answer")
+@router.post("/answer", response_model=APIResponse)
 async def answer_question(
     request: QuestionRequest,
     auth: MSGraphAuth = Depends(get_auth)
@@ -63,9 +79,18 @@ async def answer_question(
     try:
         data_access = DataAccess(auth)
         answer = await data_access.answer_question(request.question, request.context_ids)
-        return {"answer": answer}
+        message = "Here is the answer to your question."
+        return APIResponse(
+            messages=[Message(role="assistant", content=message)],
+            data={"answer": answer},
+            code="SUCCESS"
+        )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        return APIResponse(
+            messages=[Message(role="assistant", content=f"An error occurred: {str(e)}")],
+            data=None,
+            code="ERROR"
+        )
 
 @router.post("/", response_model=DataEntry)
 async def add_entry(

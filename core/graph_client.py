@@ -297,12 +297,12 @@ class MSGraphClient:
                 ))
         return files
 
-    async def get_file_content(self, file_id: str, user_email: str) -> str:
+    async def get_file_content(self, file_id: str) -> str:
         """
-        Download file content from OneDrive by file ID.
+        Download file content from OneDrive by file ID for the authenticated user.
         Returns the file content as a string (for text files).
         """
-        endpoint = f"users/{user_email}/drive/items/{file_id}/content"
+        endpoint = f"me/drive/items/{file_id}/content"
 
         token = self.auth.get_graph_token()
         url = f"{self.base_url}/{endpoint}"
@@ -340,12 +340,12 @@ class MSGraphClient:
             logger.error(f"Error fetching Outlook email by ID {email_id}: {e}")
             return None
 
-    async def get_onedrive_file_by_id(self, user_email: str, file_id: str):
-        """Fetch a single OneDrive file by its ID."""
-        endpoint = f"users/{user_email}/drive/items/{file_id}"
+    async def get_onedrive_file_by_id(self, file_id: str):
+        """Fetch a single OneDrive file by its ID for the authenticated user."""
+        endpoint = f"me/drive/items/{file_id}"
         try:
             data = await self._make_request("GET", endpoint)
-            content = await self.get_file_content(file_id, user_email=user_email)
+            content = await self.get_file_content(file_id)
             return OneDriveFile(
                 id=data["id"],
                 name=data.get("name", ""),

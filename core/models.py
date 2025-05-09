@@ -1,5 +1,5 @@
 from pydantic import BaseModel
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Any
 from datetime import datetime
 from enum import Enum
 
@@ -51,4 +51,13 @@ class SearchResponse(BaseModel):
     results: List[DataEntry]
     total_count: int
     page: int
-    page_size: int 
+    page_size: int
+
+class Message(BaseModel):
+    role: str  # e.g., "assistant", "system", "user"
+    content: str
+
+class APIResponse(BaseModel):
+    messages: List[Message]
+    data: Optional[Any] = None
+    code: Optional[str] = "SUCCESS" 
