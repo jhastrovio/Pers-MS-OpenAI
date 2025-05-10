@@ -1,4 +1,3 @@
-
 # Personal MS Chatgpt - Design Decisions
 
 Version: 10 May 2025
@@ -66,6 +65,28 @@ This document records key design decisions made for the Personal MS Chatgpt proj
 * Provides secure + managed gateway for users to query internal knowledge base.
 * Company Assistant will be published with file\_search attached.
 * Allows front-end inline citations (filename • page) + confidence score.
+
+---
+
+## 📦 Response Formatting and Output
+
+- **Structured JSON Output:**  
+  All LLM and orchestrator responses use a structured JSON format with three fields:  
+  - `answer` (str): The main response or summary.  
+  - `citations` (list of dict): Source references, with type-specific fields (e.g., file/page for drive, subject for email, table for data).  
+  - `confidence` (float, optional): Model confidence score.
+
+- **Citation Formatting:**  
+  Citations are formatted based on their type for clarity:
+  - Drive: `filename, p.X (drive)`
+  - Email: `Email: subject (Outlook)`
+  - Data: `Table: table_name (data)`
+
+- **Plain Text Conversion Utility:**  
+  A utility function converts the JSON response to a user-friendly plain text string, combining the answer, formatted citations, and confidence score.
+
+- **Rationale:**  
+  This approach ensures responses are both machine-readable (for ChatGPT Actions and integrations) and human-readable (for direct user display). It also supports future extensibility for new source types.
 
 ---
 
