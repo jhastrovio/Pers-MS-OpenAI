@@ -1,4 +1,4 @@
-﻿# Personal MS Assistant ChatGPT Actions
+﻿# Personal MS ChatGPT Actions
 
 A FastAPI-based API for integrating ChatGPT Actions with your personal Microsoft data and assistant capabilities.
 
