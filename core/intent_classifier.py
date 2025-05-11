@@ -1,34 +1,29 @@
-import os
-import joblib
-import threading
+from openai import OpenAI
 
-# Paths to saved model and vectorizer
-MODEL_PATH = os.path.join(os.path.dirname(__file__), '../data/intent_classifier_model.joblib')
-VECTORIZER_PATH = os.path.join(os.path.dirname(__file__), '../data/intent_vectorizer.joblib')
+# New: OpenAI-based intent classifier using Responses SDK
+client = OpenAI()
 
-# Singleton pattern for model/vectorizer loading
-_model = None
-_vectorizer = None
-_lock = threading.Lock()
-
-def load_model_and_vectorizer():
-    global _model, _vectorizer
-    with _lock:
-        if _model is None or _vectorizer is None:
-            _model = joblib.load(MODEL_PATH)
-            _vectorizer = joblib.load(VECTORIZER_PATH)
-    return _model, _vectorizer
-
-def classify_intent(query: str) -> str:
+def classify_intent_openai(query: str) -> str:
     """
-    Classify the intent of a user query as 'email', 'drive', 'mixed', or 'data'.
+    Classify the intent of a user query as 'email', 'drive', 'mixed', or 'data' using OpenAI Responses SDK.
     """
-    model, vectorizer = load_model_and_vectorizer()
-    X = vectorizer.transform([query])
-    return model.predict(X)[0]
+    prompt = (
+        "Classify the following user query into one of these categories: "
+        "email, drive, mixed, or data.\n\n"
+        f"Query: {query}\n\n"
+        "Category:"
+    )
+    response = client.responses.create(
+        model="gpt-4o",  # or your preferred model
+        input=prompt
+    )
+    # Post-process to ensure only valid categories are returned
+    intent = response.output_text.strip().lower()
+    valid_intents = {"email", "drive", "mixed", "data"}
+    return intent if intent in valid_intents else "mixed"
 
 # Example usage (for manual testing)
 if __name__ == "__main__":
     test_query = "Show me my latest emails from Alice"
     print(f"Query: {test_query}")
-    print(f"Predicted intent: {classify_intent(test_query)}") 
+    print(f"Predicted intent: {classify_intent_openai(test_query)}") 

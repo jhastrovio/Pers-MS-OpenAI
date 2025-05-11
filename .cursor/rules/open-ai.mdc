@@ -1,0 +1,16 @@
+---
+description: 
+globs: 
+alwaysApply: true
+---
+# Project Rules (summary)
+
+1. Use OpenAI Responses SDK (`openai` ≥ 1.14).  
+2. Use OpenAI-Agents (`openai-agents` ≥ 0.3) for multi-step tasks.  
+3. Never commit secrets – load them from .env / Cursor Secrets tab.  
+
+For full setup details see:
+[OpenAI Responses SDK.md](mdc:docs/OpenAI Responses SDK.md)  ← Responses SDK quick-ref
+[OpenAI Agents SDK.md](mdc:docs/OpenAI Agents SDK.md)  ← Agents SDK quick-ref
+
+

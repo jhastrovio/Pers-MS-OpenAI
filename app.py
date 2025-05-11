@@ -48,7 +48,7 @@ app.include_router(data_router, dependencies=[Depends(api_key_auth)])
 
 @app.get("/")
 async def root():
-    return {"message": "Personal MS Assistant ChatGPT Actions API is running"}
+    return {"message": "Pers MS Open AI Actions API is running"}
 
 if __name__ == "__main__":
     import uvicorn

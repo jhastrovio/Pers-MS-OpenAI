@@ -1,4 +1,4 @@
-﻿# Personal MS ChatGPT Actions
+﻿# Pers MS Open AI Actions
 
 A FastAPI-based API for integrating ChatGPT Actions with your personal Microsoft data and assistant capabilities.
 

@@ -1,6 +1,6 @@
 # System Architecture
 
-# Personal MS Chatgpt -Architecture
+# Pers MS Open AI - Architecture
 
 Version: 10 May 2025
 
@@ -8,7 +8,9 @@ Version: 10 May 2025
 
 ## 🎯 Overview
 
-The Personal MS Chatgpt is scalable, and future-proof AI assistant that integrates Outlook emails and OneDrive documents into a ChatGPT experience. It uses the OpenAI Responses API + file\_search tool, with planned scale migration to Azure AI Search when dataset size or query volume exceeds thresholds.
+The Pers MS Open AI is a scalable, future-proof AI assistant that integrates Outlook emails and OneDrive documents into a ChatGPT experience. All LLM/AI (RAG, chat, file_search, etc.) is accessed via OpenAI (openai Python SDK, Responses API). Azure is only used for Microsoft Graph, Key Vault, and monitoring—not for LLM/AI.
+
+**All LLM/AI and embedding calls must go through the OpenAIService class (`openai_service` instance) for consistency. Do not use direct OpenAI API calls elsewhere in the codebase.**
 
 This document defines the system architecture.
 

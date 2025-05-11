@@ -1,4 +1,4 @@
-# Personal MS Chatgpt - Design Decisions
+# Pers MS Open AI - Design Decisions
 
 Version: 10 May 2025
 
@@ -6,7 +6,18 @@ Version: 10 May 2025
 
 ## 🎯 Purpose
 
-This document records key design decisions made for the Personal MS Chatgpt project. It explains architectural and technology choices to help future maintainers understand the rationale.
+This document records key design decisions made for the Pers MS Open AI project. It explains architectural and technology choices to help future maintainers understand the rationale.
+
+---
+
+## 🚀 OpenAI SDK Usage (2025+)
+
+- **All LLM/AI (chat, RAG, file_search, etc.) is accessed via the official OpenAI Responses SDK (`openai` ≥ 1.14).**
+- **Multi-step agent orchestration and complex workflows use the OpenAI Agents SDK (`openai-agents` ≥ 0.3).**
+- **All LLM/AI and embedding calls must go through the OpenAIService class (`openai_service` instance) for consistency. Do not use direct OpenAI API calls elsewhere in the codebase.**
+- **Version pinning:** Both SDKs are pinned in `requirements.txt` as per project rules.
+- **Secrets:** API keys are never committed; always loaded from `.env` or the Cursor Secrets tab.
+- **Reference:** See [OpenAI Responses SDK.md](docs/OpenAI Responses SDK.md) and [OpenAI Agents SDK.md](docs/OpenAI Agents SDK.md) for quick-starts and conventions.
 
 ---
 
@@ -14,7 +25,7 @@ This document records key design decisions made for the Personal MS Chatgpt proj
 
 * **Simplicity first**: Minimal viable components with strong modularity.
 * **Scalable path**: Start small (OpenAI File Search), plan for scale-out (Azure AI Search).
-* **AI-native workflow**: Leverage Cursor + ChatGPT for accelerated development.
+* **AI-native workflow**: Leverage Cursor + ChatGPT for accelerated development. All LLM/AI (RAG, chat, file_search, etc.) is accessed via the official OpenAI SDKs. Azure is only used for Microsoft Graph, Key Vault, and monitoring—not for LLM/AI. All LLM/AI code must use the official OpenAI SDKs.
 * **Security by design**: OAuth2 + API key fallback + Purview + OWASP ASVS.
 
 ---
@@ -26,11 +37,12 @@ This document records key design decisions made for the Personal MS Chatgpt proj
 * Chosen for high performance, async support, and developer-friendly ecosystem.
 * Natural fit with modern Python tooling.
 
-### 2️⃣ OpenAI `responses.create()` as primary LLM endpoint
+### 2️⃣ OpenAI SDKs as primary LLM/Agent endpoints
 
-* New standard API in OpenAI Python v1.x library.
-* Fully supports file\_search tool + streaming + async.
-* Future-proof vs. older `chat.completions.create()` endpoint.
+* All LLM/AI calls use the OpenAI Responses SDK (`openai.responses.create`).
+* Multi-step agent orchestration uses the OpenAI Agents SDK (`openai-agents`).
+* Fully supports file_search tool, streaming, async, and agent workflows.
+* No Azure OpenAI is used; all LLM/AI is accessed via OpenAI endpoints and SDKs.
 
 ### 3️⃣ Use of OpenAI File Search initially
 
@@ -63,7 +75,7 @@ This document records key design decisions made for the Personal MS Chatgpt proj
 ### 8️⃣ ChatGPT Actions as client interface
 
 * Provides secure + managed gateway for users to query internal knowledge base.
-* Company Assistant will be published with file\_search attached.
+* Company Assistant will be published with file_search attached.
 * Allows front-end inline citations (filename • page) + confidence score.
 
 ---

@@ -1,4 +1,4 @@
-# Personal MS Assistant – Unified Roadmap (Rev. 09 May 2025)
+# Pers MS Open AI – Unified Roadmap (Rev. 09 May 2025)
 
 ## Related Documentation
 - [System Architecture](docs/architecture.md)
@@ -19,14 +19,19 @@ Operate a single ChatGPT assistant that searches & summarises Outlook e‑mails 
 - [x] FastAPI skeleton (/health, /query) with MSAL OAuth (service‑principal) middleware
 - [ ] Secrets in Azure Key Vault (**deferred**)
 - [x] Application Insights attached to both dev & prod App Services
+- [x] All LLM/AI (vector store, retrieval, chat, etc.) use OpenAI (openai Python SDK, Responses API). No Azure OpenAI is used; Azure is only for Microsoft Graph, Key Vault, and monitoring.
+- [x] **All LLM/AI and embedding calls must go through the OpenAIService class (`openai_service` instance) for consistency. Do not use direct OpenAI API calls elsewhere in the codebase.**
 
 ---
 
 ### 1. Core Orchestrator
-- [x] Intent classifier (email | drive | mixed | data) — implemented, tested, ongoing data/model improvement
-- [x] Response formatter with inline citations and confidence score — implemented and tested
-- [x] Unit tests for intent classifier and response formatter
-- [ ] Integration tests (Mock‑Graph, httpx TestClient)
+- [x] Intent classifier (email | drive | mixed | data) — implemented, tested, ongoing data/model improvement (to be reviewed for OpenAI SDK compatibility)
+- [x] Response formatter with inline citations and confidence score — implemented and tested (to be reviewed for OpenAI SDK compatibility)
+- [x] Unit tests for intent classifier and response formatter (to be reviewed for OpenAI SDK compatibility)
+- [x] Integration tests (Mock‑Graph, httpx TestClient, real LLM/AI, PDF processing)
+- [x] **Review and refactor all orchestrator logic, tests, and dependencies to ensure full compatibility with OpenAI Responses SDK and Agents SDK.**
+- [x] Remove any Azure OpenAI-specific code, configs, or mocks if present.
+- [x] **All LLM/AI integration and PDF processing are now fully migrated and tested with OpenAIService and pypdf.**
 
 ---
 
@@ -36,6 +41,7 @@ Operate a single ChatGPT assistant that searches & summarises Outlook e‑mails 
 - [ ] Outlook Graph delta → monthly .jsonl bundles (strip signatures)
 - [ ] OneDrive watcher → direct pass‑through of PDFs/Docs
 - [ ] ingest.py upload script – idempotent; polls status until completed
+- [ ] **Ensure all ingestion and retrieval scripts use the OpenAI SDKs and file_search tool.**
 
 ---
 
@@ -43,6 +49,7 @@ Operate a single ChatGPT assistant that searches & summarises Outlook e‑mails 
 - [ ] Azure Function (5‑min cron) runs Graph delta sync, re‑uploads changed bundles
 - [ ] "Top‑k + refine" retrieval wrapper (1 k tokens, fallback fetch on low confidence)
 - [ ] Alerts: vector_store.file_count ≥ 9 500, spikes in usage.vector_store_bytes
+- [ ] **Ensure retrieval wrappers and alerts are compatible with OpenAI SDKs.**
 
 ---
 

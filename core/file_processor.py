@@ -3,7 +3,7 @@ import logging
 from typing import Optional, Dict, Any
 from docx import Document
 import pandas as pd
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 from pptx import Presentation
 import json
 import csv

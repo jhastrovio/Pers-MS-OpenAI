@@ -1,6 +1,8 @@
 # API Examples
 
-_This document will track open and completed action items for the Personal MS Assistant project._ # Personal MS ChatGPT – API Examples
+_All LLM/AI (RAG, chat, file_search, etc.) is accessed via OpenAI (openai Python SDK, Responses API). Azure is not used for LLM/AI—only for Microsoft Graph and related infrastructure._
+
+_This document will track open and completed action items for the Pers MS Open AI project._ # Pers MS Open AI – API Examples
 
 Version: 10 May 2025
 
