@@ -7,3 +7,6 @@
 logs/
 data/cache/
 Archive/
+.env
+config/secrets.json
+config/scrt_frmt.txt
