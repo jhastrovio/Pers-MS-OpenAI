@@ -360,4 +360,29 @@ class MSGraphClient:
             )
         except Exception as e:
             logger.error(f"Error fetching OneDrive file by ID {file_id}: {e}")
-            return None 
+            return None
+
+    async def get_email_attachments(self, user_email: str, email_id: str) -> list:
+        """Fetch attachments for a given email."""
+        endpoint = f"users/{user_email}/messages/{email_id}/attachments"
+        data = await self._make_request("GET", endpoint)
+        return data.get("value", [])
+
+    async def upload_file_to_onedrive(self, local_path: str, onedrive_folder: str = "") -> dict:
+        """
+        Upload a file to the user's OneDrive root or a specified folder.
+        Returns the uploaded file's metadata (including id and webUrl).
+        """
+        filename = Path(local_path).name
+        if onedrive_folder:
+            endpoint = f"me/drive/root:/{onedrive_folder}/{filename}:/content"
+        else:
+            endpoint = f"me/drive/root:/{filename}:/content"
+        token = self.auth.get_graph_token()
+        url = f"{self.base_url}/{endpoint}"
+        headers = {"Authorization": f"Bearer {token}"}
+        async with httpx.AsyncClient() as client:
+            with open(local_path, "rb") as f:
+                resp = await client.put(url, headers=headers, content=f.read())
+                resp.raise_for_status()
+                return resp.json() 

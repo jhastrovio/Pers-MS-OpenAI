@@ -50,9 +50,13 @@ This document defines the system architecture.
 
 ### 3️⃣ Data Ingest Pipelines
 
-* `graph_ingest.py`: Outlook Graph API → JSONL converter
-* `onedrive_ingest.py`: OneDrive watcher → document upload
+* `graph_ingest.py`: Outlook Graph API → JSONL converter (one email per line/object, with metadata, body, and attachment references)
+* `onedrive_ingest.py`: OneDrive watcher → document and attachment upload
 * `ingest.py`: Unified file upload to OpenAI File Search with polling
+* **All uploads (emails, attachments, docs) use the OpenAI SDK GA Vector Store endpoints, attaching metadata via the `attributes` field.**
+* **REST API workarounds are no longer required.**
+* **Metadata-based search and filtering is supported; check OpenAI docs for latest filter syntax.**
+* Attachments are stored in OneDrive and referenced in the email JSONL by file ID or URL. Attachments are also uploaded to File Search as separate files, with metadata linking them to their parent email.
 
 ### 4️⃣ OpenAI Responses API Layer
 

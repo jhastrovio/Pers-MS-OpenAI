@@ -5,6 +5,7 @@ alwaysApply: true
 ---
 # Project Rules (summary)
 
+1. Use OpenAI Python SDK (`openai` ≥ 1.14) access and interact with OpenAI’s models and APIs from Python applications.
 1. Use OpenAI Responses SDK (`openai` ≥ 1.14).  
 2. Use OpenAI-Agents (`openai-agents` ≥ 0.3) for multi-step tasks.  
 3. Never commit secrets – load them from .env / Cursor Secrets tab.  
@@ -12,5 +13,5 @@ alwaysApply: true
 For full setup details see:
 [OpenAI Responses SDK.md](mdc:docs/OpenAI Responses SDK.md)  ← Responses SDK quick-ref
 [OpenAI Agents SDK.md](mdc:docs/OpenAI Agents SDK.md)  ← Agents SDK quick-ref
-
+[OpenAI Python SDK.md](mdc:docs/OpenAI Python SDK.md) ← Python SDK quick-ref
 

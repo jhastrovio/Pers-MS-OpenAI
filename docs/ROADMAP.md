@@ -36,12 +36,20 @@ Operate a single ChatGPT assistant that searches & summarises Outlook e‑mails 
 ---
 
 ### 2. Retrieval via Responses API + File Search
-- [ ] Create a single vector‑store (corp-kb, unlimited expiry)
-- [ ] Converter scripts
-- [ ] Outlook Graph delta → monthly .jsonl bundles (strip signatures)
-- [ ] OneDrive watcher → direct pass‑through of PDFs/Docs
-- [ ] ingest.py upload script – idempotent; polls status until completed
-- [ ] **Ensure all ingestion and retrieval scripts use the OpenAI SDKs and file_search tool.**
+- [x] Create a single vector‑store (corp-kb, unlimited expiry)
+- [x] Minimal upload pipeline tested and working with OpenAI SDK GA Vector Store endpoints and metadata (attributes)
+- [x] Converter scripts (prototype)
+- [x] Outlook Graph delta → monthly .jsonl bundles (strip signatures)
+- [x] OneDrive watcher → direct pass‑through of PDFs/Docs
+- [x] ingest.py upload script – idempotent; polls status until completed
+- [x] **All ingestion and retrieval scripts now use the OpenAI SDK GA Vector Store endpoints and support metadata via the `attributes` field.**
+- [ ] **Integrate this pattern into the full email/OneDrive ingestion pipeline.**
+- [ ] **Implement metadata-based search and filtering as OpenAI updates documentation/examples.**
+- [ ] **Email ingestion:**
+    - [x] Fetch emails via Graph API, save as JSONL (one email per line/object, with metadata and body).
+    - [x] For each email, include a list of attachment references (OneDrive file IDs/URLs) in the JSONL.
+    - [x] Store all attachments in OneDrive; upload each to OpenAI File Search as a separate file, with metadata linking to the parent email.
+    - [ ] Automate the full pipeline for new/changed emails and attachments.
 
 ---
 

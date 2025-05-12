@@ -14,6 +14,9 @@ This document records key design decisions made for the Pers MS Open AI project.
 
 - **All LLM/AI (chat, RAG, file_search, etc.) is accessed via the official OpenAI Responses SDK (`openai` ≥ 1.14).**
 - **Multi-step agent orchestration and complex workflows use the OpenAI Agents SDK (`openai-agents` ≥ 0.3).**
+- **All file and metadata uploads use the OpenAI Vector Store API (GA endpoints) via the Python SDK, using the `attributes` field for metadata.**
+- **REST API workarounds are no longer needed; all ingestion is handled via the SDK.**
+- **Metadata filtering and search are supported; check the latest OpenAI documentation for filter syntax and updates.**
 - **All LLM/AI and embedding calls must go through the OpenAIService class (`openai_service` instance) for consistency. Do not use direct OpenAI API calls elsewhere in the codebase.**
 - **Version pinning:** Both SDKs are pinned in `requirements.txt` as per project rules.
 - **Secrets:** API keys are never committed; always loaded from `.env` or the Cursor Secrets tab.
@@ -49,6 +52,8 @@ This document records key design decisions made for the Pers MS Open AI project.
 * Fully managed vector store with zero ops burden.
 * 10,000 file limit suits Phase 1 + Phase 2 data sizes.
 * Direct integration with Responses API = simplest RAG flow.
+* **All file and document uploads (including emails, attachments, and OneDrive docs) are performed via the OpenAI Vector Store API (GA endpoints), which supports metadata for each file via the `attributes` field.**
+* **Metadata is required and attached to every file/document for robust search and filtering. Filtering is supported; check OpenAI docs for latest filter syntax.**
 
 ### 4️⃣ Planned scale-out to Azure AI Search
 
@@ -77,6 +82,14 @@ This document records key design decisions made for the Pers MS Open AI project.
 * Provides secure + managed gateway for users to query internal knowledge base.
 * Company Assistant will be published with file_search attached.
 * Allows front-end inline citations (filename • page) + confidence score.
+
+### 9️⃣ Email and Attachment Ingestion
+
+* All emails are ingested as JSONL files (one email per line/object) for efficient, scalable processing and OpenAI File Search compatibility.
+* Each email JSON object includes metadata (subject, sender, recipients, date, etc.), body, and a list of references to attachment files.
+* Attachments are stored in OneDrive for centralized, secure storage. Each attachment is referenced in the email JSONL by its OneDrive file ID or URL.
+* Attachments are also ingested into OpenAI File Search as separate files, with metadata linking them to their parent email.
+* **All uploads to OpenAI File Search are performed using the GA Vector Store SDK endpoints, with metadata attached to each file for advanced filtering and retrieval. REST API workarounds are no longer required.**
 
 ---
 

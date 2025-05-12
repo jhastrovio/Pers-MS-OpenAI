@@ -120,4 +120,29 @@ Format the response as a JSON object with these keys: main_topic, key_points, im
         content = re.sub(r"^```(?:json)?|```$", "", content, flags=re.IGNORECASE | re.MULTILINE).strip()
         return json.loads(content)
 
+    async def upload_file_to_file_search(self, file_path: Optional[str] = None, metadata: Optional[dict] = None, content: Optional[str] = None) -> str:
+        """Upload a file or string content to OpenAI File Search and return the file ID."""
+        # OpenAI File Search expects the file to be uploaded with purpose="assistants"
+        if content is not None:
+            import io
+            file_obj = io.BytesIO(content.encode("utf-8"))
+            file_obj.name = metadata.get("filename", "email.txt") if metadata else "email.txt"
+            response = await client.files.create(
+                file=file_obj,
+                purpose="assistants",
+                metadata=metadata if metadata else None
+            )
+        elif file_path is not None:
+            with open(file_path, "rb") as f:
+                response = await client.files.create(
+                    file=f,
+                    purpose="assistants",
+                    metadata=metadata if metadata else None
+                )
+        else:
+            raise ValueError("Either file_path or content must be provided.")
+        file_id = response.id
+        self.logger.info(f"Uploaded to File Search with file_id: {file_id}")
+        return file_id
+
 openai_service = OpenAIService() 
