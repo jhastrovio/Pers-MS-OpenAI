@@ -297,12 +297,17 @@ class MSGraphClient:
                 ))
         return files
 
-    async def get_file_content(self, file_id: str) -> str:
+    async def get_file_content(self, file_id: str, user_email: str = None) -> str:
         """
-        Download file content from OneDrive by file ID for the authenticated user.
-        Returns the file content as a string (for text files).
+        Download file content from OneDrive by file ID.
+        Uses /users/{user_email}/drive/items/{file_id}/content for app-only auth,
+        or /me/drive/items/{file_id}/content for delegated auth.
+        Returns the file content as a string (for text files) or bytes (for binary files).
         """
-        endpoint = f"me/drive/items/{file_id}/content"
+        if user_email:
+            endpoint = f"users/{user_email}/drive/items/{file_id}/content"
+        else:
+            endpoint = f"me/drive/items/{file_id}/content"
 
         token = self.auth.get_graph_token()
         url = f"{self.base_url}/{endpoint}"
@@ -311,7 +316,7 @@ class MSGraphClient:
             "Accept": "*/*"
         }
 
-        async with httpx.AsyncClient() as client:
+        async with httpx.AsyncClient(follow_redirects=True) as client:
             response = await client.get(url, headers=headers)
             response.raise_for_status()
             # Try to decode as text, fallback to bytes

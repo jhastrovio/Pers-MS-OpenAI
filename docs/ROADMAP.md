@@ -35,7 +35,7 @@ Operate a single ChatGPT assistant that searches & summarises Outlook e‑mails 
 
 ---
 
-### 2. Retrieval via Responses API + File Search
+### 2. Retrieval via Responses API + File Search
 - [x] Create a single vector‑store (corp-kb, unlimited expiry)
 - [x] Minimal upload pipeline tested and working with OpenAI SDK GA Vector Store endpoints and metadata (attributes)
 - [x] Converter scripts (prototype)
@@ -43,13 +43,15 @@ Operate a single ChatGPT assistant that searches & summarises Outlook e‑mails 
 - [x] OneDrive watcher → direct pass‑through of PDFs/Docs
 - [x] ingest.py upload script – idempotent; polls status until completed
 - [x] **All ingestion and retrieval scripts now use the OpenAI SDK GA Vector Store endpoints and support metadata via the `attributes` field.**
-- [ ] **Integrate this pattern into the full email/OneDrive ingestion pipeline.**
-- [ ] **Implement metadata-based search and filtering as OpenAI updates documentation/examples.**
-- [ ] **Email ingestion:**
+- [x] **Unified ingestion: All emails, attachments, and OneDrive docs are now processed through a single pipeline and uploaded to the OpenAI vector store with consistent metadata.**
+- [x] **UX layer implemented via Custom GPT in ChatGPT, using Actions to call a tiny proxy that forwards to the OpenAI Responses API. No custom web front-end required.**
+- [ ] **Implement and test metadata-based search and filtering as OpenAI updates documentation/examples.**
+- [ ] **Future UX improvements will focus on prompt engineering, Action schema, and proxy enhancements.**
+- [x] **Email ingestion:**
     - [x] Fetch emails via Graph API, save as JSONL (one email per line/object, with metadata and body).
     - [x] For each email, include a list of attachment references (OneDrive file IDs/URLs) in the JSONL.
-    - [x] Store all attachments in OneDrive; upload each to OpenAI File Search as a separate file, with metadata linking to the parent email.
-    - [ ] Automate the full pipeline for new/changed emails and attachments.
+    - [x] Store all attachments in OneDrive; process all files (including attachments) through the unified OneDrive ingestion pipeline.
+    - [x] Automate the full pipeline for new/changed emails and attachments.
 
 ---
 

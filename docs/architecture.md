@@ -19,15 +19,13 @@ This document defines the system architecture.
 ## 🧩 High-Level Architecture
 
 ```
-[ChatGPT Action / Web Client]
+[Custom GPT (ChatGPT) UI]
             ↓
-[FastAPI Orchestrator Backend]
-    → MSAL OAuth, Intent Classifier
-    → Data Ingest Pipelines
-    → OpenAI Responses API + file_search
-    → Post-processing: Citations + Confidence
+[Tiny Proxy (FastAPI, Cloudflare Worker, etc.)]
             ↓
-[OpenAI File Search (10k file limit)]
+[OpenAI Responses API + file_search]
+            ↓
+[OpenAI Vector Store (10k file limit)]
             ↓
 [Future: Azure AI Search (>10k files or 300+ queries/day)]
 ```
@@ -36,19 +34,30 @@ This document defines the system architecture.
 
 ## 📦 Component Breakdown
 
-### 1️⃣ FastAPI Orchestrator
+### 0️⃣ Custom GPT (ChatGPT) + Actions
 
-* Main API entry point (`/query` endpoint)
+* Users interact with a Custom GPT in ChatGPT, configured with Actions that call a lightweight proxy endpoint.
+* No custom web front-end is required; all UX is native to ChatGPT.
+
+### 1️⃣ Tiny Proxy (FastAPI, Cloudflare Worker, etc.)
+
+* Receives Action calls from the Custom GPT.
+* Forwards requests to the OpenAI Responses API (with file_search and the project's vector store).
+* Can be extended for logging, reranking, or custom business logic.
+
+### 2️⃣ FastAPI Orchestrator
+
+* Main API entry point for backend automation and ingestion (not user-facing).
 * MSAL OAuth2 middleware for authentication
 * Routes requests to appropriate handler modules
 * Logs metrics to Application Insights
 
-### 2️⃣ Intent Classifier
+### 3️⃣ Intent Classifier
 
 * Classifies user intent: `email`, `drive`, or `mixed`
 * Enables targeted retrieval pipeline execution
 
-### 3️⃣ Data Ingest Pipelines
+### 4️⃣ Data Ingest Pipelines
 
 * `graph_ingest.py`: Outlook Graph API → JSONL converter (one email per line/object, with metadata, body, and attachment references)
 * `onedrive_ingest.py`: OneDrive watcher → document and attachment upload
@@ -58,23 +67,23 @@ This document defines the system architecture.
 * **Metadata-based search and filtering is supported; check OpenAI docs for latest filter syntax.**
 * Attachments are stored in OneDrive and referenced in the email JSONL by file ID or URL. Attachments are also uploaded to File Search as separate files, with metadata linking them to their parent email.
 
-### 4️⃣ OpenAI Responses API Layer
+### 5️⃣ OpenAI Responses API Layer
 
 * `chat_handler.py`: Connects to OpenAI via `responses.create()`
 * file\_search tool attached for document retrieval
 * Handles streaming + async completions where needed
 
-### 5️⃣ Post-Processing & Formatting
+### 6️⃣ Post-Processing & Formatting
 
 * `response_formatter.py`: Adds inline citations (filename + page)
 * Attaches confidence scores to response text
 
-### 6️⃣ Azure Functions (Live Sync)
+### 7️⃣ Azure Functions (Live Sync)
 
 * Runs 5-min cron jobs to check Graph delta changes
 * Triggers re-ingest for any changed bundles
 
-### 7️⃣ Monitoring + Budget Alerts
+### 8️⃣ Monitoring + Budget Alerts
 
 * Application Insights: latency, precision dashboards
 * Trigger alerts when file count nears 9,500 or usage spikes

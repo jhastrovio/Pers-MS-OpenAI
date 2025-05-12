@@ -91,6 +91,14 @@ This document records key design decisions made for the Pers MS Open AI project.
 * Attachments are also ingested into OpenAI File Search as separate files, with metadata linking them to their parent email.
 * **All uploads to OpenAI File Search are performed using the GA Vector Store SDK endpoints, with metadata attached to each file for advanced filtering and retrieval. REST API workarounds are no longer required.**
 
+### 🔟 UX & Retrieval via Custom GPT + Proxy
+
+* The primary user interface is a Custom GPT in ChatGPT, configured with Actions that call a lightweight proxy (FastAPI, Cloudflare Worker, etc.).
+* The proxy simply forwards requests to the OpenAI Responses API (with file_search and the project's vector store).
+* This approach eliminates the need for a custom web front-end; users interact natively via ChatGPT.
+* The proxy can be easily swapped, extended, or enhanced (e.g., for reranking, logging, or custom business logic) without changing the user experience.
+* All retrieval, search, and RAG logic is handled by the proxy and OpenAI APIs, ensuring a future-proof and maintainable architecture.
+
 ---
 
 ## 📦 Response Formatting and Output

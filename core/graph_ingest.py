@@ -12,6 +12,7 @@ import base64
 from pypdf import PdfReader
 from docx import Document as DocxDocument
 import pandas as pd
+from core.vectorstore_upload import upload_to_vectorstore
 
 ATTACHMENTS_DIR = Path("attachments")
 ATTACHMENTS_DIR.mkdir(exist_ok=True)
@@ -21,6 +22,9 @@ EMAILS_JSONL = f"emails_{datetime.now().strftime('%Y%m%d')}.jsonl"
 ONEDRIVE_ROOT = "PERS-MS-OPENAI"
 ATTACHMENTS_ONEDRIVE_FOLDER = f"{ONEDRIVE_ROOT}/attachments"
 JSONL_ONEDRIVE_FOLDER = f"{ONEDRIVE_ROOT}/jsonl"
+
+# Set your vector store ID here (reuse this for all uploads)
+VECTOR_STORE_ID = os.getenv("OPENAI_VECTOR_STORE_ID") or "vs_abc123..."  # TODO: Replace with your actual vector store ID
 
 def sanitize_filename(name):
     name = re.sub(r'[\\/:"*?<>|]+', '_', name)
@@ -132,19 +136,20 @@ async def main():
                             if 'password' in str(e).lower() or 'protected' in str(e).lower():
                                 password_protected = True
                                 print(f"[WARN] XLSX attachment {filename} is password protected.")
+                    # Upload to OneDrive attachments folder
                     onedrive_id = None
                     onedrive_url = None
                     try:
-                        upload_meta = await client.upload_file_to_onedrive(str(filepath), onedrive_folder=sanitize_filename(ATTACHMENTS_ONEDRIVE_FOLDER))
+                        upload_meta = await client.upload_file_to_onedrive(
+                            str(filepath),
+                            onedrive_folder="PERS-MS-OPENAI/attachments"
+                        )
                         onedrive_id = upload_meta.get("id")
                         onedrive_url = upload_meta.get("webUrl")
                     except Exception as e:
                         print(f"[WARN] Failed to upload {filename} to OneDrive: {e}")
-                    openai_file_id = None
-                    try:
-                        openai_file_id = await openai_service.upload_file_to_file_search(str(filepath))
-                    except Exception as e:
-                        print(f"[WARN] Failed to upload {filename} to OpenAI File Search: {e}")
+                        onedrive_id = None
+                        onedrive_url = None
                     attachment_refs.append({
                         "name": att["name"],
                         "size": att.get("size"),
@@ -152,7 +157,6 @@ async def main():
                         "local_path": str(filepath),
                         "onedrive_id": onedrive_id,
                         "onedrive_url": onedrive_url,
-                        "openai_file_id": openai_file_id,
                         "password_protected": password_protected
                     })
             # Clean HTML, remove signature and quoted text
@@ -186,7 +190,7 @@ async def main():
     except Exception as e:
         print(f"[WARN] Failed to upload JSONL to OneDrive: {e}")
 
-    # Upload each email as a separate record to OpenAI File Search
+    # Upload each email as a separate record to OpenAI Vector Store
     try:
         with open(EMAILS_JSONL, "r", encoding="utf-8") as f:
             for line in f:
@@ -202,17 +206,23 @@ async def main():
                     "importance": email_record.get("importance", ""),
                     "categories": email_record.get("categories", []),
                 }
+                # Write email text to a temp file
+                temp_path = f"tmp_email_{email_record['id']}.txt"
+                with open(temp_path, "w", encoding="utf-8") as tempf:
+                    tempf.write(email_text)
                 try:
-                    openai_file_id = await openai_service.upload_file_to_file_search(
-                        file_path=None,  # We'll use content instead
-                        metadata=metadata,
-                        content=email_text
+                    openai_file_id, _ = upload_to_vectorstore(
+                        file_path=temp_path,
+                        attributes=metadata,
+                        vector_store_id=VECTOR_STORE_ID
                     )
                     print(f"[UPLOAD] Email {email_record['id']} → OpenAI file_id: {openai_file_id}")
                 except Exception as e:
-                    print(f"[WARN] Failed to upload email {email_record['id']} to OpenAI File Search: {e}")
+                    print(f"[WARN] Failed to upload email {email_record['id']} to OpenAI Vector Store: {e}")
+                finally:
+                    os.remove(temp_path)
     except Exception as e:
-        print(f"[WARN] Failed to upload emails to OpenAI File Search: {e}")
+        print(f"[WARN] Failed to upload emails to OpenAI Vector Store: {e}")
 
 if __name__ == "__main__":
     asyncio.run(main()) 
