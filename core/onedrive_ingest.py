@@ -7,6 +7,10 @@ import httpx
 from pathlib import Path
 from datetime import datetime
 import re
+import PyPDF2
+from docx import Document as DocxDocument
+from openpyxl import load_workbook
+from pptx import Presentation as PptxPresentation
 
 # Ingest all files from the PERS-MS-OPENAI root folder and subfolders
 TARGET_FOLDERS = [
@@ -18,6 +22,30 @@ DOWNLOAD_DIR.mkdir(exist_ok=True)
 
 # Set your vector store ID here (reuse this for all uploads)
 VECTOR_STORE_ID = os.getenv("OPENAI_VECTOR_STORE_ID") or "vs_abc123..."  # TODO: Replace with your actual vector store ID
+
+def extract_internal_author(file_path):
+    ext = os.path.splitext(file_path)[1].lower()
+    try:
+        if ext == ".docx":
+            doc = DocxDocument(file_path)
+            props = doc.core_properties
+            return props.author or ""
+        elif ext == ".xlsx":
+            wb = load_workbook(file_path, read_only=True)
+            props = wb.properties
+            return props.creator or ""
+        elif ext == ".pptx":
+            prs = PptxPresentation(file_path)
+            props = prs.core_properties
+            return props.author or ""
+        elif ext == ".pdf":
+            with open(file_path, "rb") as f:
+                reader = PyPDF2.PdfReader(f)
+                info = reader.metadata
+                return info.get("/Author", "") if info else ""
+    except Exception as e:
+        print(f"[WARN] Could not extract internal author from {file_path}: {e}")
+    return ""
 
 async def main():
     user_email = os.environ.get("USER_EMAIL")
@@ -51,6 +79,12 @@ async def main():
                     if hasattr(e, 'response') and hasattr(e.response, 'text'):
                         print(f"[DEBUG] Error response: {e.response.text}")
                     continue
+                # After download, try to extract internal author
+                internal_author = extract_internal_author(local_path)
+                if internal_author:
+                    author = internal_author
+                else:
+                    author = item.get("createdBy", {}).get("user", {}).get("displayName", "")
                 # Upload to OpenAI Vector Store
                 match = re.match(r"([A-Za-z0-9_-]+)_(.+)", filename)
                 if match:
@@ -61,13 +95,16 @@ async def main():
                     original_filename = filename
 
                 metadata = {
-                    "filename": original_filename,
-                    "email_id": email_id,
-                    "filetype": os.path.splitext(filename)[1].lower(),
-                    "onedrive_path": item.get("full_path"),
-                    "onedrive_id": item.get("id"),
+                    "id": item["id"],
+                    "name": original_filename,
+                    "type": "file",
+                    "extension": os.path.splitext(filename)[1].lower(),
                     "size": item.get("size"),
-                    "uploaded_at": datetime.utcnow().isoformat(),
+                    "author": author,
+                    "last_modified_by": item.get("lastModifiedBy", {}).get("user", {}).get("displayName", ""),
+                    "date": item.get("lastModifiedDateTime"),
+                    "path": item.get("full_path"),
+                    "url": item.get("webUrl", "")
                 }
                 try:
                     openai_file_id, _ = upload_to_vectorstore(

@@ -197,14 +197,16 @@ async def main():
                 email_record = json.loads(line)
                 email_text = f"Subject: {email_record['subject']}\nFrom: {email_record['sender']}\nTo: {', '.join(email_record['recipients'])}\nDate: {email_record['date']}\n\n{email_record['body']}"
                 metadata = {
-                    "email_id": email_record["id"],
-                    "subject": email_record["subject"],
-                    "sender": email_record["sender"],
+                    "id": email_record["id"],
+                    "name": email_record["subject"],
+                    "type": "email",
+                    "author": email_record["sender"],
                     "recipients": email_record["recipients"],
                     "date": email_record["date"],
                     "has_attachments": email_record.get("has_attachments", False),
                     "importance": email_record.get("importance", ""),
                     "categories": email_record.get("categories", []),
+                    "url": f"https://outlook.office.com/mail/id/{email_record['id']}"  # Placeholder, update if actual URL available
                 }
                 # Write email text to a temp file
                 temp_path = f"tmp_email_{email_record['id']}.txt"

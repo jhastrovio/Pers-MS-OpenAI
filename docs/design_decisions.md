@@ -1,142 +1,141 @@
-# Pers MS Open AI - Design Decisions
+# Pers MS OpenAI – Architectural Decision Record (ADR Log)
 
-Version: 10 May 2025
+Version: 1.5 – 13 May 2025
 
 ---
 
 ## 🎯 Purpose
 
-This document records key design decisions made for the Pers MS Open AI project. It explains architectural and technology choices to help future maintainers understand the rationale.
+Maintain a concise, version‑controlled trail of **architectural decisions only**. Delivery status & future work sit in `ROADMAP.md`.
 
 ---
 
-## 🚀 OpenAI SDK Usage (2025+)
+## 📑 Index
 
-- **All LLM/AI (chat, RAG, file_search, etc.) is accessed via the official OpenAI Responses SDK (`openai` ≥ 1.14).**
-- **Multi-step agent orchestration and complex workflows use the OpenAI Agents SDK (`openai-agents` ≥ 0.3).**
-- **All file and metadata uploads use the OpenAI Vector Store API (GA endpoints) via the Python SDK, using the `attributes` field for metadata.**
-- **REST API workarounds are no longer needed; all ingestion is handled via the SDK.**
-- **Metadata filtering and search are supported; check the latest OpenAI documentation for filter syntax and updates.**
-- **All LLM/AI and embedding calls must go through the OpenAIService class (`openai_service` instance) for consistency. Do not use direct OpenAI API calls elsewhere in the codebase.**
-- **Version pinning:** Both SDKs are pinned in `requirements.txt` as per project rules.
-- **Secrets:** API keys are never committed; always loaded from `.env` or the Cursor Secrets tab.
-- **Reference:** See [OpenAI Responses SDK.md](docs/OpenAI Responses SDK.md) and [OpenAI Agents SDK.md](docs/OpenAI Agents SDK.md) for quick-starts and conventions.
-
----
-
-## ✅ Core Design Principles
-
-* **Simplicity first**: Minimal viable components with strong modularity.
-* **Scalable path**: Start small (OpenAI File Search), plan for scale-out (Azure AI Search).
-* **AI-native workflow**: Leverage Cursor + ChatGPT for accelerated development. All LLM/AI (RAG, chat, file_search, etc.) is accessed via the official OpenAI SDKs. Azure is only used for Microsoft Graph, Key Vault, and monitoring—not for LLM/AI. All LLM/AI code must use the official OpenAI SDKs.
-* **Security by design**: OAuth2 + API key fallback + Purview + OWASP ASVS.
+| ID      | Title                                                        | Status    | Date        |
+| ------- | ------------------------------------------------------------ | --------- | ----------- |
+| ADR‑001 | FastAPI as backend orchestrator                              | Accepted  | 10 May 2025 |
+| ADR‑002 | OpenAI SDKs as primary LLM & Agent endpoints                 | Accepted  | 10 May 2025 |
+| ADR‑003 | Email & attachment ingestion via JSONL → Vector Store        | Accepted  | 10 May 2025 |
+| ADR‑004 | Structured JSON response schema for answers                  | Accepted  | 10 May 2025 |
+| ADR‑005 | OpenAI Vector Store for Phase 1–2 storage                    | Accepted  | 10 May 2025 |
+| ADR‑006 | Custom GPT Action → Tiny Proxy → Responses API & File Search | Accepted  | 13 May 2025 |
+| ADR‑007 | Microsoft Authentication Library (MSAL) for OAuth2           | Proposed  | –           |
+| ADR‑008 | Azure Application Insights for observability                 | Proposed  | –           |
+| ADR‑009 | Catalogue of rejected alternatives                           | Catalogue | 13 May 2025 |
 
 ---
 
-## 📐 Major Decisions
+### ADR‑001 FastAPI as backend orchestrator
 
-### 1️⃣ FastAPI as backend orchestrator
-
-* Chosen for high performance, async support, and developer-friendly ecosystem.
-* Natural fit with modern Python tooling.
-
-### 2️⃣ OpenAI SDKs as primary LLM/Agent endpoints
-
-* All LLM/AI calls use the OpenAI Responses SDK (`openai.responses.create`).
-* Multi-step agent orchestration uses the OpenAI Agents SDK (`openai-agents`).
-* Fully supports file_search tool, streaming, async, and agent workflows.
-* No Azure OpenAI is used; all LLM/AI is accessed via OpenAI endpoints and SDKs.
-
-### 3️⃣ Use of OpenAI File Search initially
-
-* Fully managed vector store with zero ops burden.
-* 10,000 file limit suits Phase 1 + Phase 2 data sizes.
-* Direct integration with Responses API = simplest RAG flow.
-* **All file and document uploads (including emails, attachments, and OneDrive docs) are performed via the OpenAI Vector Store API (GA endpoints), which supports metadata for each file via the `attributes` field.**
-* **Metadata is required and attached to every file/document for robust search and filtering. Filtering is supported; check OpenAI docs for latest filter syntax.**
-
-### 4️⃣ Planned scale-out to Azure AI Search
-
-* Trigger conditions: file count > 10,000 OR >300 queries/day average.
-* Azure AI Search offers hybrid BM25 + vector search + ACL trimming.
-* Reindex + swap `vector_store_ids` → zero downtime migration.
-
-### 5️⃣ MSAL (Microsoft Authentication Library) for OAuth2
-
-* Enables secure service principal flow for backend automation.
-* Already proven in enterprise Azure + Graph integrations.
-
-### 6️⃣ Application Insights for observability
-
-* Provides full backend tracing, latency dashboards, usage alerts.
-* No external monitoring system required.
-
-### 7️⃣ Live sync design via Azure Function
-
-* Graph delta queries every 5 minutes.
-* Automates file ingestion updates for any mailbox or document changes.
-* Keeps OpenAI File Search vector store always fresh.
-
-### 8️⃣ ChatGPT Actions as client interface
-
-* Provides secure + managed gateway for users to query internal knowledge base.
-* Company Assistant will be published with file_search attached.
-* Allows front-end inline citations (filename • page) + confidence score.
-
-### 9️⃣ Email and Attachment Ingestion
-
-* All emails are ingested as JSONL files (one email per line/object) for efficient, scalable processing and OpenAI File Search compatibility.
-* Each email JSON object includes metadata (subject, sender, recipients, date, etc.), body, and a list of references to attachment files.
-* Attachments are stored in OneDrive for centralized, secure storage. Each attachment is referenced in the email JSONL by its OneDrive file ID or URL.
-* Attachments are also ingested into OpenAI File Search as separate files, with metadata linking them to their parent email.
-* **All uploads to OpenAI File Search are performed using the GA Vector Store SDK endpoints, with metadata attached to each file for advanced filtering and retrieval. REST API workarounds are no longer required.**
-
-### 🔟 UX & Retrieval via Custom GPT + Proxy
-
-* The primary user interface is a Custom GPT in ChatGPT, configured with Actions that call a lightweight proxy (FastAPI, Cloudflare Worker, etc.).
-* The proxy simply forwards requests to the OpenAI Responses API (with file_search and the project's vector store).
-* This approach eliminates the need for a custom web front-end; users interact natively via ChatGPT.
-* The proxy can be easily swapped, extended, or enhanced (e.g., for reranking, logging, or custom business logic) without changing the user experience.
-* All retrieval, search, and RAG logic is handled by the proxy and OpenAI APIs, ensuring a future-proof and maintainable architecture.
+**Status:** Accepted – 10 May 2025
+Need async, high‑performance Python API; chose FastAPI for `/rag`, health, and future endpoints.
 
 ---
 
-## 📦 Response Formatting and Output
+### ADR‑002 OpenAI SDKs as primary LLM & Agent endpoints
 
-- **Structured JSON Output:**  
-  All LLM and orchestrator responses use a structured JSON format with three fields:  
-  - `answer` (str): The main response or summary.  
-  - `citations` (list of dict): Source references, with type-specific fields (e.g., file/page for drive, subject for email, table for data).  
-  - `confidence` (float, optional): Model confidence score.
-
-- **Citation Formatting:**  
-  Citations are formatted based on their type for clarity:
-  - Drive: `filename, p.X (drive)`
-  - Email: `Email: subject (Outlook)`
-  - Data: `Table: table_name (data)`
-
-- **Plain Text Conversion Utility:**  
-  A utility function converts the JSON response to a user-friendly plain text string, combining the answer, formatted citations, and confidence score.
-
-- **Rationale:**  
-  This approach ensures responses are both machine-readable (for ChatGPT Actions and integrations) and human-readable (for direct user display). It also supports future extensibility for new source types.
+**Status:** Accepted – 10 May 2025
+Use `openai` and `openai‑agents` exclusively for chat/RAG; no raw REST calls.
 
 ---
 
-## ❗ Rejected Alternatives
+### ADR‑003 Email & attachment ingestion via JSONL → Vector Store
 
-| Option                           | Reason for Rejection                                    |
-| -------------------------------- | ------------------------------------------------------- |
-| LangChain as full orchestrator   | Added unnecessary complexity for this focused use case. |
-| LlamaIndex as ingestion pipeline | Lighter in functionality vs. Azure + native scripts.    |
-| Vector DBs (Pinecone, Qdrant)    | Avoid additional hosting & ops at MVP phase.            |
+**Status:** Accepted – 10 May 2025
+Serialise emails to JSONL; ingest attachments separately with metadata links.
 
 ---
 
-## 📝 Conclusion
+### ADR‑004 Structured JSON response schema for answers
 
-The current stack maximizes developer velocity, minimizes unnecessary complexity, and provides a clear growth path for scale + security + observability. It remains intentionally small & tightly scoped.
+**Status:** Accepted – 10 May 2025
+All answers return `{ answer, citations[], confidence }` before rendering.
 
 ---
 
-Last updated: 10 May 2025
+### ADR‑005 OpenAI Vector Store for Phase 1–2 storage
+
+**Status:** Accepted – 10 May 2025
+Up to 10 k docs; supports native metadata filters. Migrate when cap or cost exceeded (tracked in `ROADMAP.md`).
+
+---
+
+### ADR‑006 Custom GPT Action → Tiny Proxy → Responses API & File Search
+
+**Status:** Accepted – 13 May 2025
+
+#### Context
+
+We want users to stay inside the familiar ChatGPT UI **and** tap the full GA Retrieval feature‑set (metadata filters, streaming). ChatGPT *Actions* allow a Custom GPT to invoke an external HTTPS endpoint—our tiny proxy—so we can forward the request to `responses.create()` which supports metadata filters.
+
+#### Decision
+
+Build a private **Custom GPT** with one Action `/rag` that calls a **tiny proxy** (FastAPI in Azure Container App or Cloudflare Worker). The proxy translates the payload into a single SDK call:
+
+```python
+client.responses.create(
+    model="gpt-4o",
+    input=req.json["prompt"],
+    tools=[{
+        "type": "file_search",
+        "vector_store_ids": [VS_ID],
+        "file_search": {"filters": req.json.get("filters", {})}
+    }]
+)
+```
+
+Proxy returns `{ "answer": resp.output_text }`.
+
+#### End‑to‑End Picture (Who / What / When)
+
+| Step | Actor / Layer       | What happens                                                |
+| ---- | ------------------- | ----------------------------------------------------------- |
+| 1    | **User in ChatGPT** | Types a question.                                           |
+| 2    | **Custom GPT**      | Detects question needs Action, calls `/rag`.                |
+| 3    | **Tiny Proxy**      | Builds `responses.create()` call (adds metadata `filters`). |
+| 4    | **Responses API**   | Searches Vector Store, streams answer back.                 |
+| 5    | **Tiny Proxy**      | Extracts `output_text`, returns JSON.                       |
+| 6    | **Custom GPT**      | Renders answer to user.                                     |
+
+Latencies: ChatGPT→Proxy (≈200 ms regional), Proxy→OpenAI (≈100 ms). Target P95 ≤ 4 s remains.
+
+#### Consequences
+
+* ✅ **Zero front‑end code** – users stay in ChatGPT.
+* ✅ **Full GA features** (metadata, streaming, JSON mode) because proxy uses latest SDK.
+* ✅ **Extensible** – future rerankers or hybrid search can be added inside proxy.
+* ❌ **Extra hop** adds small latency—mitigated by regional co‑location.
+* ❌ **Secrets** live in proxy; Key Vault integration scheduled (ADR‑007).
+
+---
+
+### ADR‑007 Microsoft Authentication Library (MSAL) for OAuth2
+
+**Status:** Proposed
+Plan to adopt MSAL client‑credential flow for Graph & Key Vault access.
+
+---
+
+### ADR‑008 Azure Application Insights for observability
+
+**Status:** Proposed
+Add distributed tracing & metrics; alert on latency & errors.
+
+---
+
+### ADR‑009 Rejected alternatives (catalogue)
+
+| Option                                      | Reason                                           |
+| ------------------------------------------- | ------------------------------------------------ |
+| Direct UI (Teams bot / web) + Responses API | Adds front‑end build; user loses ChatGPT context |
+| LangChain orchestrator                      | Too heavy for scoped use                         |
+| LlamaIndex pipeline                         | Missing advanced metadata support                |
+| Self‑hosted vector DB (Pinecone, Qdrant)    | Adds ops overhead at MVP                         |
+
+---
+
+## 🗒️ Changelog
+
+* **v1.5 – 13 May 2025** – Re‑aligned with Option A: ADR‑006 accepted; removed ADR‑010; added end‑to‑end flow & consequences.
+* **v1.4 – 13 May 2025** – (superseded) temporary pivot to direct Responses API.
