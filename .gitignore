@@ -10,3 +10,6 @@ Archive/
 .env
 config/secrets.json
 config/scrt_frmt.txt
+downloads/
+downloads_onedrive/
+attachments/
