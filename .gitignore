@@ -1,15 +1,45 @@
-﻿__pycache__/
+﻿# Python
+__pycache__/
 *.py[cod]
-*.class
-# .env
-.venv
+*.so
+.Python
 .coverage
+.pytest_cache/
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.cursor/
+
+# Logs
 logs/
-data/cache/
-Archive/
+*.log
+
+# Environment and Secrets
 .env
 config/secrets.json
 config/scrt_frmt.txt
+
+# Data directories
+data/
+!data/1.1.0-raw/.gitkeep
+!data/1.2.0-processed/.gitkeep
+!data/1.3.0-storage/.gitkeep
+!data/1.5.0-vector/.gitkeep
+
+# Temporary files
+*.tmp
+*.temp
 downloads/
 downloads_onedrive/
 attachments/

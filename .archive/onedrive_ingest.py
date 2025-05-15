@@ -2,7 +2,7 @@ import os
 import asyncio
 from core.graph_client import MSGraphClient
 from core.auth import MSGraphAuth
-from core.vectorstore_upload import upload_to_vectorstore
+from core.openai_service import openai_service
 import httpx
 from pathlib import Path
 from datetime import datetime
@@ -21,7 +21,7 @@ DOWNLOAD_DIR = Path("downloads_onedrive")
 DOWNLOAD_DIR.mkdir(exist_ok=True)
 
 # Set your vector store ID here (reuse this for all uploads)
-VECTOR_STORE_ID = os.getenv("OPENAI_VECTOR_STORE_ID") or "vs_abc123..."  # TODO: Replace with your actual vector store ID
+VECTOR_STORE_ID = os.getenv("OPENAI_VECTOR_STORE_ID")
 
 def extract_internal_author(file_path):
     ext = os.path.splitext(file_path)[1].lower()
@@ -107,10 +107,9 @@ async def main():
                     "url": item.get("webUrl", "")
                 }
                 try:
-                    openai_file_id, _ = upload_to_vectorstore(
+                    openai_file_id = await openai_service.upload_file_to_file_search(
                         file_path=str(local_path),
-                        attributes=metadata,
-                        vector_store_id=VECTOR_STORE_ID
+                        metadata=metadata
                     )
                     print(f"[UPLOAD] {filename} → OpenAI file_id: {openai_file_id}")
                 except Exception as e:

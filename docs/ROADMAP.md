@@ -1,78 +1,94 @@
-# Pers MS Open AI – Unified Roadmap  
-**Revision 13 May 2025**
+# Pers MS OpenAI – Project Roadmap
 
-> One file = one source of truth.  
-> Design rationale lives in `design_decisions_clean.md` (ADR v1.5).
+Version: 1.0 – 14 May 2025
 
----
+## 📋 Project Overview
 
-## 🎯 Goal
-Operate a ChatGPT-native assistant that can search & summarise Outlook e-mails and OneDrive documents, with a clear scale-out path (>10 k files) and enterprise-grade security.
+This roadmap tracks the implementation status and future work for the Pers MS OpenAI platform, following the architecture defined in `design_decisions.md`.
 
----
+## 🎯 Phase 1: Core Infrastructure (Current)
 
-## 0. Foundation — **Delivered**
-- [x] Git repo, GitHub Actions CI, pre-commit hooks  
-- [x] FastAPI skeleton (`/health`, `/rag`) with MSAL middleware  
-- [x] Application Insights wired to **dev** & **prod** App Services  
-- [x] OpenAI SDKs (`openai`, `openai-agents`) centralised in `OpenAIService`  
+### Data Ingestion Pipeline
+- [ ] 1.1.0: Microsoft Graph Integration
+  - [ ] 1.1.1: Email extraction service
+  - [ ] 1.1.2: OneDrive document sync
+  - [ ] 1.1.3: MSAL authentication setup
 
----
+- [ ] 1.2.0: Data Processing
+  - [ ] 1.2.1: Email cleaning & enrichment
+  - [ ] 1.2.2: Document text extraction
+  - [ ] 1.2.3: Attachment processing
 
-## 1. Core Orchestrator — **Delivered**
-- [x] Intent classifier (`email | drive | mixed | data`)  
-- [x] Response formatter (inline citations + confidence)  
-- [x] Unit & integration tests (httpx TestClient + mock Graph)  
+- [ ] 1.3.0: Storage Layer
+  - [ ] 1.3.1: OneDrive folder structure setup
+  - [ ] 1.3.2: JSON schema implementation
+  - [ ] 1.3.3: JSONL batch processing
 
----
+### API & Vector Store
+- [ ] 1.4.0: FastAPI Backend
+  - [ ] 1.4.1: Health check endpoints
+  - [ ] 1.4.2: RAG endpoint implementation
+  - [ ] 1.4.3: Error handling & logging
 
-## 2. Retrieval via Responses API + File Search — **Delivered / Ongoing**
-- [x] `corp-kb` vector-store (GA endpoint)  
-- [x] Unified ingestion (e-mails / attachments / OneDrive docs → JSONL → vector-store)  
-- [x] Tiny proxy calls `responses.create()` with `file_search`  
-- [ ] **Metadata filters:**  move DataAccess.search_data to openai_service.retrieve; ensure proxy re-uses that wrapper; add smoke tests.
+- [ ] 1.5.0: OpenAI Integration
+  - [ ] 1.5.1: Vector store setup
+  - [ ] 1.5.2: Attribute filtering
+  - [ ] 1.5.3: Response streaming
 
----
+## 🎯 Phase 2: Enhancement & Scale
 
-## 3. ChatGPT Action & UX — **Future Work**
-*(Option A – keep users inside ChatGPT)*  
-- [ ] Publish **Company-Assistant** Custom GPT (prod vector_store_id)  
-- [ ] Citation badges: `filename • page` in answers  
-- [ ] Latency & precision dashboards in Application Insights  
+### Performance & Monitoring
+- [ ] 2.1.0: Observability
+  - [ ] 2.1.1: Application Insights integration
+  - [ ] 2.1.2: Custom metrics & alerts
+  - [ ] 2.1.3: Performance monitoring
 
----
+### Data Management
+- [ ] 2.2.0: Incremental Updates
+  - [ ] 2.2.1: Change detection system
+  - [ ] 2.2.2: Delta processing
+  - [ ] 2.2.3: Re-indexing capability
 
-## 4. Live Sync & Budget Control — **Future Work**
-- [ ] Azure Function (5-min cron) — Graph delta sync → re-ingest changed blobs  
-- [ ] Retrieval wrapper: “**top-k → refine**” with fallback when `score < 0.15`  
-- [ ] Alerts: `file_count ≥ 9 500` **OR** daily spend > US$ 5  
+## 📁 File Organization
 
----
+### Code Structure
+```
+core/
+├── 1.1.0-graph/           # Microsoft Graph integration
+├── 1.2.0-processing/      # Data processing services
+├── 1.3.0-storage/         # Storage layer implementation
+├── 1.4.0-api/            # FastAPI backend
+└── 1.5.0-openai/         # OpenAI integration
+```
 
-## 5. Security & Compliance Hardening — **Future Work**
-- [ ] **Azure Key Vault** for secrets + 90-day rotation *(paused, tracked)* ← ADR-007  
-- [ ] OWASP ASVS threat-model workshop  
-- [ ] Purview scan → redact PII before upload  
-- [ ] Audit logs exported to Log Analytics  
+### Data Structure
+```
+data/
+├── 1.1.0-raw/            # Raw data from Graph
+├── 1.2.0-processed/      # Cleaned & enriched data
+├── 1.3.0-storage/        # OneDrive sync files
+└── 1.5.0-vector/         # Vector store data
+```
 
----
+## 📊 Progress Tracking
 
-## 6. Scale-out Path (>10 k files) — **Future Work**
-Trigger: `file_count > 10 000` **OR** `avg_daily_queries > 300`  
-- [ ] Evaluate **Azure AI Search** (hybrid BM25 + vector + ACLs)  
-- [ ] Re-index & switch `vector_store_ids` with zero downtime  
+| Phase | Component | Status | Target Date |
+|-------|-----------|---------|-------------|
+| 1     | Graph Integration | Not Started | TBD |
+| 1     | Data Processing | Not Started | TBD |
+| 1     | Storage Layer | Not Started | TBD |
+| 1     | API & Vector Store | Not Started | TBD |
 
----
+## 🔄 Version Control
 
-## 📊 Acceptance Criteria
-| KPI                            | Target  |
-|--------------------------------|---------|
-| End-to-end latency (P95)       | ≤ 4 s   |
-| Answer precision (manual)      | ≥ 80 %  |
-| Cost per 100 queries           | < US$ 5 |
-| Vector-store file cap          | ≤ 10 000|
-| Security incidents             | 0       |
+- Each component follows semantic versioning (X.Y.Z)
+- Major version (X): Phase number
+- Minor version (Y): Component number
+- Patch version (Z): Implementation iteration
 
----
+## 📝 Notes
 
-*Last updated 13 May 2025 — consistent with ADR v1.5.*
+- All code should include unit tests and documentation
+- Each component should be independently deployable
+- Monitor vector store usage to stay within 10k document limit
+- Regular backups of OneDrive data required

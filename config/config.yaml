@@ -1,8 +1,0 @@
-credentials_file: "config/secrets.json"
-
-paths:
-  one_drive_root: "C:\Users\JamesHassett\OneDrive - Tasseh Capital\PersonalMSA-Starter"
-  raw_email_dir: "raw_emails"
-  processed_chunk_dir: "processed_chunks"
-  embeddings_dir: "embeddings"
-  logs_dir: "logs"
