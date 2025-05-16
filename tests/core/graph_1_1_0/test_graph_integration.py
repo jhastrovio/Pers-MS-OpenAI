@@ -143,4 +143,44 @@ async def test_save_first_10_emails_to_onedrive():
             assert "id" in result
         except httpx.HTTPStatusError as e:
             print(f"Error uploading {file_name}: {e.response.text}")
+            raise
+
+@pytest.mark.integration
+@pytest.mark.asyncio
+async def test_download_emails_with_attachments():
+    """Test downloading emails with attachments from Microsoft Graph and saving them to OneDrive."""
+    client = GraphClient()
+    emails = await client.get_emails()
+    assert emails, "No emails found!"
+
+    # Filter emails with attachments
+    emails_with_attachments = []
+    for email in emails:
+        message_id = email.get("id")
+        attachments = await client.get_attachments(message_id)
+        if attachments:
+            emails_with_attachments.append(email)
+
+    assert emails_with_attachments, "No emails with attachments found!"
+
+    # Save up to 10 emails with attachments to OneDrive
+    for i, email in enumerate(emails_with_attachments[:10]):
+        subject = email.get("subject", "no_subject")
+        safe_subject = sanitize_filename(subject)
+        file_name = f"email_with_attachment_{safe_subject}_{i+1}.eml"
+        folder = config["onedrive"]["emails_folder"]
+        print(f"Uploading: {file_name} to folder: {folder}")
+        headers = [
+            f"Subject: {email.get('subject', '')}",
+            f"From: {email.get('from', {}).get('emailAddress', {}).get('address', '')}",
+            f"To: {', '.join([to.get('emailAddress', {}).get('address', '') for to in email.get('toRecipients', [])])}"
+        ]
+        body = email.get("body", {}).get("content", "No content")
+        raw_email = "\n".join(headers) + "\n\n" + body
+        try:
+            result = await client.save_email_content_to_onedrive(raw_email, file_name, folder=folder)
+            print(f"Saved: {file_name} to {folder}, Response: {result}")
+            assert "id" in result
+        except httpx.HTTPStatusError as e:
+            print(f"Error uploading {file_name}: {e.response.text}")
             raise 
