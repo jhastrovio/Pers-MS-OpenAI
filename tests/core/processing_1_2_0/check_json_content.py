@@ -8,9 +8,11 @@ async def check_json_content():
     """Download and check the content of a processed JSON file."""
     client = GraphClient()
     
+    # Get user email from config
+    user_email = config["user"]["email"]
+    
     # Get the first JSON file from the processed_emails_2 folder
     folder = config["onedrive"]["processed_emails_folder"]
-    user_email = os.getenv("USER_EMAIL")
     url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/{folder}:/children"
     access_token = await client._get_access_token()
     headers = {"Authorization": f"Bearer {access_token}"}

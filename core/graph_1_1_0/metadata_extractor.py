@@ -1,5 +1,8 @@
 """
-Metadata extraction utilities for different file types.
+Metadata extraction utilities for Graph API documents.
+
+This module provides functionality to extract metadata from different file types
+retrieved from Microsoft Graph API.
 """
 
 import io
@@ -9,7 +12,7 @@ from pptx import Presentation
 from openpyxl import load_workbook
 
 class MetadataExtractor:
-    """Handles metadata extraction from different file types."""
+    """Handles metadata extraction from different file types retrieved from Graph API."""
     
     @staticmethod
     def extract_metadata(content: bytes, content_type: str) -> Dict[str, Any]:

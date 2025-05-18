@@ -1,5 +1,6 @@
 import os
 from msal import ConfidentialClientApplication
+from core.utils.config import config
 
 client_id = os.getenv("CLIENT_ID")
 client_secret = os.getenv("CLIENT_SECRET")
@@ -16,4 +17,13 @@ app = ConfidentialClientApplication(
 )
 result = app.acquire_token_for_client(scopes=["https://graph.microsoft.com/.default"])
 print("\nMSAL acquire_token_for_client result:")
-print(result) 
+print(result)
+
+@pytest.fixture
+def msal_client():
+    """Create an MSAL client for testing."""
+    client_id = config["azure"]["client_id"]
+    client_secret = config["azure"]["client_secret"]
+    tenant_id = config["azure"]["tenant_id"]
+    
+    return MSALClient(client_id, client_secret, tenant_id) 

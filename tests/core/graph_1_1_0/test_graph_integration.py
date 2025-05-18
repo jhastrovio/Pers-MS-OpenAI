@@ -99,7 +99,8 @@ async def test_save_email_to_onedrive():
         os.unlink(temp_file_path)
 
 @pytest.mark.integration
-async def test_pull_and_save_real_email_content():
+async def test_fetch_and_save_email_content():
+    """Test fetching email content and saving it to OneDrive."""
     client = GraphClient()
     emails = await client.get_emails()
     assert emails, "No emails found to save!"
@@ -121,14 +122,15 @@ def sanitize_filename(name):
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_save_first_10_emails_to_onedrive():
+async def test_fetch_and_save_multiple_emails():
+    """Test fetching and saving multiple emails to OneDrive."""
     client = GraphClient()
     emails = await client.get_emails()
     for i, email in enumerate(emails[:10]):
         subject = email.get("subject", "no_subject")
         safe_subject = sanitize_filename(subject)
         file_name = f"email_{safe_subject}_{i+1}.eml"
-        folder = config["onedrive"]["emails_folder"]  # Use just 'emails_1' from config
+        folder = config["onedrive"]["emails_folder"]
         print(f"Uploading: {file_name} to folder: {folder}")
         headers = [
             f"Subject: {email.get('subject', '')}",
@@ -147,8 +149,8 @@ async def test_save_first_10_emails_to_onedrive():
 
 @pytest.mark.integration
 @pytest.mark.asyncio
-async def test_download_emails_with_attachments():
-    """Test downloading emails with attachments from Microsoft Graph and saving them to OneDrive."""
+async def test_fetch_and_save_emails_with_attachments():
+    """Test fetching emails with attachments and saving them to OneDrive."""
     client = GraphClient()
     emails = await client.get_emails()
     assert emails, "No emails found!"
@@ -183,4 +185,15 @@ async def test_download_emails_with_attachments():
             assert "id" in result
         except httpx.HTTPStatusError as e:
             print(f"Error uploading {file_name}: {e.response.text}")
-            raise 
+            raise
+
+def test_environment_variables():
+    """Test that all required environment variables are set."""
+    print("CLIENT_ID:", config["azure"]["client_id"])
+    print("CLIENT_SECRET:", "set" if config["azure"]["client_secret"] else "not set")
+    print("TENANT_ID:", config["azure"]["tenant_id"])
+    
+    # Check that all required variables are set
+    required_vars = ["client_id", "client_secret", "tenant_id"]
+    if not all(config["azure"][k] for k in required_vars):
+        pytest.skip("Required environment variables not set") 

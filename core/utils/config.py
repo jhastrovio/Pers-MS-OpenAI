@@ -45,6 +45,24 @@ ALLOWED_EXTENSIONS = {
 
 # Main configuration dictionary
 config = {
+    # Azure configuration
+    "azure": {
+        "client_id": get_env_variable('CLIENT_ID'),
+        "client_secret": get_env_variable('CLIENT_SECRET'),
+        "tenant_id": get_env_variable('TENANT_ID')
+    },
+    
+    # User configuration
+    "user": {
+        "email": get_env_variable('USER_EMAIL')
+    },
+    
+    # OpenAI configuration
+    "openai": {
+        "api_key": get_env_variable('OPENAI_API_KEY'),
+        "vector_store_id": get_env_variable('OPENAI_VECTOR_STORE_ID')
+    },
+    
     # OneDrive configuration
     "onedrive": {
         "emails_folder": "data_PMSA/emails_1",
