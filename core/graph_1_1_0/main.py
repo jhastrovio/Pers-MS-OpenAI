@@ -339,7 +339,18 @@ class GraphClient:
             web_url = file_data.get("webUrl")
             if not web_url:
                 logger.error("No webUrl in response: %s", file_data)
-                raise Exception("Failed to get web URL from OneDrive response")
+                # Try to get the URL from the file metadata
+                file_id = file_data.get("id")
+                if file_id:
+                    file_url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/items/{file_id}"
+                    file_response = await self.client.get(file_url, headers=headers)
+                    file_response.raise_for_status()
+                    file_metadata = file_response.json()
+                    web_url = file_metadata.get("webUrl")
+                    if not web_url:
+                        raise Exception("Failed to get web URL from OneDrive response")
+                else:
+                    raise Exception("Failed to get web URL from OneDrive response")
             
             logger.info(f"Successfully uploaded file to {web_url}")
             return web_url

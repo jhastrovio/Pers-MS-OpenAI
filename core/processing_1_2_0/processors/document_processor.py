@@ -10,6 +10,7 @@ from typing import Dict, Any, Union
 import logging
 import os
 import json
+import tempfile
 from datetime import datetime
 import uuid
 
@@ -38,52 +39,119 @@ class DocumentProcessor(BaseProcessor):
         self.processed_folder = self.config["FOLDERS"]["PROCESSED_DOCUMENTS"]
         self.documents_folder = self.config["FOLDERS"]["DOCUMENTS"]
     
-    async def process(self, file_path: str, user_email: str = None) -> Dict[str, Any]:
-        """Process a document file.
+    async def process(self, file_path_or_data: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
+        """Process a document file or raw content.
         
         Args:
-            file_path: The path of the file to process
-            user_email: Optional email address of the user. If not provided, uses config value.
+            file_path_or_data: Either a file path (str) or a dictionary containing:
+                - file_path: Path to the file to process, or
+                - content: Raw content bytes
+                - filename: Name of the file (required if content is provided)
+                - content_type: MIME type of the content (optional)
             
         Returns:
             dict: Processing results including metadata and content
         """
         try:
-            # Override user email in config if provided
-            original_email = None
-            if user_email:
-                original_email = self.config["user"]["email"]
-                self.config["user"]["email"] = user_email
+            # Convert file path to data dict if needed
+            if isinstance(file_path_or_data, str):
+                data = {"file_path": file_path_or_data}
+            else:
+                data = file_path_or_data
             
             # Process the document
-            result = await self._process_document(file_path)
-            
-            # Restore original user email if it was overridden
-            if original_email:
-                self.config["user"]["email"] = original_email
-            
+            result = await self._process_impl(data)
             return result
             
+        except ValidationError as e:
+            # Propagate ValidationError directly
+            raise
         except Exception as e:
-            logger.error(f"Error processing document {os.path.basename(file_path)}: {str(e)}")
-            raise ProcessingError(f"Failed to process document: {str(e)}")
+            error_msg = f"Failed to process document: {str(e)}"
+            logger.error(error_msg)
+            raise ProcessingError(error_msg)
     
-    async def _process_document(self, file_path: str) -> Dict[str, Any]:
+    async def _process_impl(self, data: Dict[str, Any]) -> Dict[str, Any]:
+        """Implementation of document processing logic.
+        
+        Args:
+            data: Dictionary containing either:
+                - file_path: Path to the file to process, or
+                - content: Raw content bytes
+                - filename: Name of the file (required if content is provided)
+                - content_type: MIME type of the content (optional)
+                - onedrive_path: Path to the original file in OneDrive (optional)
+            
+        Returns:
+            dict: Processing results including metadata and content
+        """
+        try:
+            file_path = data.get('file_path')
+            content = data.get('content')
+            filename = data.get('filename')
+            content_type = data.get('content_type')
+            onedrive_path = data.get('onedrive_path')
+            
+            # Handle raw content
+            if content is not None:
+                if not filename:
+                    raise ValidationError("filename is required when providing raw content")
+                
+                # Create temporary file
+                with tempfile.NamedTemporaryFile(delete=False, suffix=os.path.splitext(filename)[1]) as tmp_file:
+                    tmp_file.write(content)
+                    file_path = tmp_file.name
+                
+                try:
+                    return await self._process_document(file_path, content_type=content_type, onedrive_path=onedrive_path)
+                finally:
+                    os.remove(file_path)
+            
+            # Handle file path
+            elif file_path:
+                return await self._process_document(file_path, content_type=content_type, onedrive_path=onedrive_path)
+            
+            else:
+                raise ValidationError("Either file_path or content must be provided")
+                
+        except ValidationError as e:
+            # Propagate ValidationError directly
+            raise
+        except Exception as e:
+            error_msg = f"Failed to process document: {str(e)}"
+            logger.error(error_msg)
+            raise ProcessingError(error_msg)
+    
+    async def _process_document(
+            self,
+            file_path: str,
+            *,
+            content_type: str | None = None,
+            meta_overrides: dict[str, Any] | None = None,
+            onedrive_path: str | None = None,  # Add parameter for original OneDrive path
+        ) -> Dict[str, Any]:
         """Process a document file.
         
         Args:
             file_path: Path to the document file
+            content_type: Optional content type override
+            meta_overrides: Optional dictionary of metadata field overrides
+            onedrive_path: Optional path to the original file in OneDrive
             
         Returns:
             Processing result
         """
         try:
-            logger.info(f"Processing document: {os.path.basename(file_path)}")
+            # Get original filename by removing 'temp_' prefix if present
+            original_filename = os.path.basename(file_path)
+            if original_filename.startswith('temp_'):
+                original_filename = original_filename[5:]  # Remove 'temp_' prefix
+                
+            logger.info(f"Processing document: {original_filename}")
             
             # Get file attributes
             file_size = os.path.getsize(file_path)
-            filename = os.path.basename(file_path)
-            content_type = self._detect_content_type(filename)
+            content_type = content_type or self._detect_content_type(original_filename)
             
             # Extract text content
             text_content = await self._extract_document_text(file_path)
@@ -100,52 +168,65 @@ class DocumentProcessor(BaseProcessor):
             # Generate document ID
             document_id = str(uuid.uuid4())
             
-            # Get web URL (if file already exists in OneDrive)
-            web_url = await self._get_file_web_url(filename)
+            # Get the original document's OneDrive URL using the OneDrive path if provided
+            original_doc_url = ""
+            if onedrive_path:
+                original_doc_url = await self._get_file_web_url(onedrive_path)
+            else:
+                logger.warning(f"No OneDrive path provided for {original_filename}, URL will be blank")
             
-            # Create document metadata
-            document_metadata = {
-                "document_id": document_id,
-                "type": "document",
-                "filename": filename,
-                "one_drive_url": web_url,
-                "created_at": datetime.now().isoformat(),
-                "size": file_size,
-                "content_type": content_type,
-                "source": "onedrive",
-                "is_attachment": False,
-                "text_content": text_content
-            }
+            # Create document metadata using EmailDocumentMetadata
+            document_metadata = EmailDocumentMetadata(
+                document_id=document_id,
+                type="document",
+                filename=original_filename,  # Use original filename without temp_ prefix
+                one_drive_url=original_doc_url,  # Set to original document's URL
+                created_at=datetime.now().isoformat(),
+                size=file_size,
+                content_type=content_type,
+                source="onedrive",
+                is_attachment=False,  # default
+                text_content=text_content,
+                tags=[],
+                title=additional_metadata.get('title', os.path.splitext(original_filename)[0]),  # Use original filename for title fallback
+                **(meta_overrides or {}),  # Apply any metadata overrides
+            )
             
             # Add additional metadata
-            document_metadata.update(additional_metadata)
+            for key, value in additional_metadata.items():
+                if key != 'title':  # Skip title as we've already handled it
+                    setattr(document_metadata, key, value)
             
             # Save metadata to OneDrive
             try:
                 # Create a new filename for the JSON metadata
                 timestamp_prefix = datetime.now().strftime("%Y-%m-%d")
-                base_name = os.path.splitext(filename)[0]
+                base_name = os.path.splitext(original_filename)[0]
                 new_filename = f"{timestamp_prefix}_{base_name}_{document_id}.json"
                 
                 # Convert metadata to JSON
-                json_content = json.dumps(document_metadata, indent=2, cls=DateTimeEncoder)
+                json_content = json.dumps(document_metadata.__dict__, indent=2, cls=DateTimeEncoder)
                 
                 # Upload to OneDrive
                 user_email = self.config["user"]["email"]
                 upload_path = f"{self.processed_folder}/{new_filename}"
                 
-                upload_url = await self.graph_client.upload_file(
-                    user_email,
-                    upload_path,
-                    json_content.encode('utf-8')
-                )
+                try:
+                    # Upload JSON metadata
+                    await self.graph_client.upload_file(
+                        user_email,
+                        upload_path,
+                        json_content.encode('utf-8')
+                    )
+                    logger.info(f"Successfully uploaded metadata to OneDrive: {upload_path}")
+                        
+                except Exception as e:
+                    logger.error(f"Error saving metadata to OneDrive: {str(e)}")
+                    raise ProcessingError(f"Failed to save metadata to OneDrive: {str(e)}")
                 
-                # Update one_drive_url in metadata if upload was successful
-                if upload_url:
-                    document_metadata["one_drive_url"] = upload_url
-                    
             except Exception as e:
                 logger.error(f"Error saving metadata to OneDrive: {str(e)}")
+                raise ProcessingError(f"Failed to save metadata to OneDrive: {str(e)}")
                 
             # Return the processing result
             return {
@@ -251,30 +332,39 @@ class DocumentProcessor(BaseProcessor):
         
         return text.strip()
     
-    async def _get_file_web_url(self, filename: str) -> str:
+    async def _get_file_web_url(self, file_path: str) -> str:
         """Get the web URL of a file in OneDrive.
         
         Args:
-            filename: Name of the file
+            file_path: Full path to the file
             
         Returns:
             Web URL of the file or empty string if not found
         """
         try:
             user_email = self.config["user"]["email"]
-            file_path = f"{self.documents_folder}/{filename}"
             
-            # Check if file exists
-            if await self.graph_client.file_exists(file_path):
-                # Construct the URL
-                # In a real implementation, you would get this from Graph API
-                sharepoint_domain = "tassehcapital-my.sharepoint.com"  # Get from config if available
-                user_email_domain = user_email.split('@')[1]
-                user_name = user_email.split('@')[0]
-                return f"https://{sharepoint_domain}/personal/{user_name}_{user_email_domain}/Documents/{file_path}"
+            # Get the file metadata from OneDrive
+            access_token = await self.graph_client._get_access_token()
+            headers = {"Authorization": f"Bearer {access_token}"}
             
-            return ""
+            # Normalize file path for OneDrive API
+            file_path = file_path.replace('\\', '/').strip('/')
+            url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/{file_path}"
+            
+            response = await self.graph_client.client.get(url, headers=headers)
+            response.raise_for_status()
+            
+            # Get the web URL from the response
+            file_data = response.json()
+            web_url = file_data.get("webUrl")
+            if not web_url:
+                logger.error(f"No webUrl in response for {file_path}: {file_data}")
+                return ""
+                
+            logger.info(f"Got web URL for {file_path}: {web_url}")
+            return web_url
             
         except Exception as e:
-            logger.warning(f"Error getting webUrl for file {filename}: {str(e)}")
+            logger.error(f"Error getting web URL for {file_path}: {str(e)}")
             return "" 

@@ -6,7 +6,7 @@ import io
 from typing import Dict, Any
 from bs4 import BeautifulSoup
 import docx
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 import pandas as pd
 from pptx import Presentation
 from openpyxl import load_workbook

@@ -111,6 +111,9 @@ PROCESSING_CONFIG = {
         "PROCESSED_CHUNKS": config["onedrive"]["processed_chunk_dir"],
         "EMBEDDINGS": config["onedrive"]["embeddings_dir"],
         "LOGS": config["onedrive"]["logs_dir"]
+    },
+    "user": {
+        "email": config["user"]["email"]
     }
 }
 
