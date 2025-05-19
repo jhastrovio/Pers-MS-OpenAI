@@ -1,14 +1,18 @@
 ---
-description: 
+description: for implentation of OPENAI tasks
 globs: 
-alwaysApply: true
+alwaysApply: false
 ---
-# Project Rules (summary)
+.
+
+
+ [ROADMAP.md](mdc:docs/ROADMAP.md) contains the overall objectives and project plan
+
 
 1. Use OpenAI Python SDK (`openai` ≥ 1.14) access and interact with OpenAI’s models and APIs from Python applications.
-1. Use OpenAI Responses SDK (`openai` ≥ 1.14).  
-2. Use OpenAI-Agents (`openai-agents` ≥ 0.3) for multi-step tasks.  
-3. Never commit secrets – load them from .env / Cursor Secrets tab.  
+2. Use OpenAI Responses SDK (`openai` ≥ 1.14).  
+3. Use OpenAI-Agents (`openai-agents` ≥ 0.3) for multi-step tasks.  
+4. Never commit secrets – load them from .env / Cursor Secrets tab.  
 
 For full setup details see:
 [OpenAI Responses SDK.md](mdc:docs/OpenAI Responses SDK.md)  ← Responses SDK quick-ref

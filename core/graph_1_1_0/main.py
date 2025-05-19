@@ -23,6 +23,14 @@ from core.utils.filename_utils import create_hybrid_filename
 
 logger = get_logger(__name__)
 
+# Custom JSON encoder to handle datetime objects
+class DateTimeEncoder(json.JSONEncoder):
+    """JSON encoder that converts datetime objects to ISO format strings."""
+    def default(self, obj):
+        if isinstance(obj, (datetime, timedelta)):
+            return obj.isoformat()
+        return super().default(obj)
+
 class GraphClient:
     """Client for interacting with Microsoft Graph API."""
     
@@ -55,6 +63,60 @@ class GraphClient:
             self._token_expiry = datetime.now() + timedelta(seconds=token_data['expires_in'] - 300)
         except Exception as e:
             raise Exception(f"Failed to refresh token: {str(e)}")
+    
+    async def list_files(self, user_email: str, folder_path: str) -> List[Dict[str, Any]]:
+        """List files in a OneDrive folder.
+        
+        Args:
+            user_email: The email address of the user
+            folder_path: The path to the folder in OneDrive
+            
+        Returns:
+            List of file metadata objects
+        """
+        try:
+            access_token = await self._get_access_token()
+            headers = {"Authorization": f"Bearer {access_token}"}
+            
+            # Normalize folder path for OneDrive API
+            folder_path = folder_path.replace('\\', '/').strip('/')
+            url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/{folder_path}:/children"
+            
+            response = await self.client.get(url, headers=headers)
+            response.raise_for_status()
+            
+            return response.json().get("value", [])
+            
+        except Exception as e:
+            logger.error(f"Error listing files in {folder_path}: {str(e)}")
+            return []
+    
+    async def get_file_content(self, user_email: str, file_path: str) -> bytes:
+        """Get the content of a file from OneDrive.
+        
+        Args:
+            user_email: The email address of the user
+            file_path: The path to the file in OneDrive
+            
+        Returns:
+            File content as bytes
+        """
+        try:
+            access_token = await self._get_access_token()
+            headers = {"Authorization": f"Bearer {access_token}"}
+            
+            # Normalize file path for OneDrive API
+            file_path = file_path.replace('\\', '/').strip('/')
+            url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/{file_path}:/content"
+            
+            response = await self.client.get(url, headers=headers)
+            response.raise_for_status()
+            
+            return response.content
+            
+        except Exception as e:
+            logger.error(f"Error getting content of file {file_path}: {str(e)}")
+            return None
     
     async def fetch_and_store_email(self, user_email: str, message_id: str) -> dict:
         """Fetch an email message and store it in three stages:
@@ -150,7 +212,7 @@ class GraphClient:
                         att_name,
                         att_ext
                     )
-                    att_path = os.path.join(config["onedrive"]["documents_folder"], att_filename)
+                    att_path = os.path.join(config["onedrive"]["attachments_folder"], att_filename)
                     att_url = await self.upload_file(user_email, att_path, att_content)
                     
                     # Extract metadata for the attachment
@@ -181,8 +243,8 @@ class GraphClient:
                     # Save companion JSON file with metadata
                     base_name, ext = os.path.splitext(att_filename)
                     json_filename = f"{base_name}{ext}.json"
-                    json_path = os.path.join(config["onedrive"]["documents_folder"], json_filename)
-                    json_content = json.dumps(attachment_metadata.to_dict(), indent=2)
+                    json_path = os.path.join(config["onedrive"]["attachments_folder"], json_filename)
+                    json_content = json.dumps(attachment_metadata.to_dict(), indent=2, cls=DateTimeEncoder)
                     json_url = await self.upload_file(user_email, json_path, json_content.encode('utf-8'))
                     
                     attachment_paths.append({
@@ -230,7 +292,7 @@ class GraphClient:
                 '.doc': 'application/msword',
                 '.docx': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
                 '.xls': 'application/vnd.ms-excel',
-                '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                '.xlsx': 'application/vnd.openxmlformats-officedocument.spreadsheetml.document',
                 '.ppt': 'application/vnd.ms-powerpoint',
                 '.pptx': 'application/vnd.openxmlformats-officedocument.presentationml.presentation',
                 '.txt': 'text/plain',
@@ -247,9 +309,9 @@ class GraphClient:
             # Ensure the folder exists
             folder_path = os.path.dirname(file_path)
             if folder_path:
-                # Create folder if it doesn't exist
-                folder_url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/{folder_path}"
                 try:
+                    # Create folder if it doesn't exist
+                    folder_url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/{folder_path}"
                     await self.client.get(folder_url, headers=headers)
                 except httpx.HTTPStatusError as e:
                     if e.response.status_code == 404:
@@ -265,31 +327,27 @@ class GraphClient:
             
             # Upload the file
             upload_url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/{file_path}:/content"
-            logger.debug(f"Uploading to URL: {upload_url}")
-            logger.debug(f"Content-Type: {content_type}")
-            logger.debug(f"File size: {len(content)} bytes")
+            logger.info(f"Uploading to URL: {upload_url}")
+            logger.info(f"Content-Type: {content_type}")
+            logger.info(f"File size: {len(content)} bytes")
             
             response = await self.client.put(upload_url, headers=headers, content=content)
-            
-            if response.status_code == 400:
-                error_data = response.json()
-                logger.error(f"OneDrive API error: {error_data}")
-                raise Exception(f"OneDrive API error: {error_data.get('error', {}).get('message', 'Unknown error')}")
-                
-                response.raise_for_status()
+            response.raise_for_status()
             
             # Get the web URL
             file_data = response.json()
             web_url = file_data.get("webUrl")
             if not web_url:
+                logger.error("No webUrl in response: %s", file_data)
                 raise Exception("Failed to get web URL from OneDrive response")
-                
+            
+            logger.info(f"Successfully uploaded file to {web_url}")
             return web_url
             
         except httpx.HTTPStatusError as e:
-            logger.error(f"HTTP error occurred: {str(e)}")
-            logger.error(f"Response content: {e.response.text}")
-            raise Exception(f"HTTP error uploading to OneDrive: {str(e)}")
+            error_data = e.response.json() if e.response.content else {}
+            logger.error(f"HTTP error {e.response.status_code} uploading to OneDrive: {error_data}")
+            raise Exception(f"HTTP error uploading to OneDrive: {error_data.get('error', {}).get('message', str(e))}")
         except Exception as e:
             logger.error(f"Failed to upload file {file_path}: {str(e)}")
             raise Exception(f"Failed to upload file: {str(e)}")

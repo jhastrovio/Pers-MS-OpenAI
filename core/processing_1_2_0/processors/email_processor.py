@@ -17,11 +17,12 @@ from email.utils import parsedate_to_datetime
 import re
 from html import unescape
 import os
+import unicodedata
 from core.processing_1_2_0.engine.base import BaseProcessor, ProcessingError, ValidationError
 from core.processing_1_2_0.engine.text_extractor import TextExtractor
 from core.graph_1_1_0.metadata_extractor import MetadataExtractor
 from core.graph_1_1_0.metadata import EmailDocumentMetadata
-from core.utils.config import config
+from core.utils.config import config, PROCESSING_CONFIG, CONTENT_TYPES
 from core.graph_1_1_0.main import GraphClient
 from core.utils.logging import get_logger
 import dataclasses
@@ -62,13 +63,15 @@ class EmailProcessor(BaseProcessor):
         Args:
             processor_config: Configuration dictionary containing processing settings
         """
-        self.config = processor_config or config
+        self.config = processor_config or PROCESSING_CONFIG
         self.metadata_extractor = MetadataExtractor()
         self.text_extractor = TextExtractor()
         self.graph_client = GraphClient()
-        # Initialize attachment processing if needed
-        self.attachment_processor = None  # Will be initialized on demand
-    
+        self.emails_folder = config["onedrive"]["emails_folder"]
+        self.attachments_folder = config["onedrive"]["attachments_folder"]
+        self.processed_emails_folder = config["onedrive"]["processed_emails_folder"]
+        logger.info(f"EmailProcessor initialized with folders: emails={self.emails_folder}, attachments={self.attachments_folder}")
+
     async def process(self, eml: bytes, user_email: str = None) -> dict:
         """Process an email message from .eml bytes.
         
@@ -126,7 +129,7 @@ class EmailProcessor(BaseProcessor):
             default_outlook_url = ""
             if message_id:
                 # Create a standard Outlook web URL format
-                user_email = self.config["user"]["email"]
+                user_email = self.config["user"]["email"] if "user" in self.config else config["user"]["email"]
                 tenant = user_email.split('@')[1]
                 default_outlook_url = f"https://outlook.office.com/mail/inbox/id/{message_id}"
             
@@ -150,7 +153,7 @@ class EmailProcessor(BaseProcessor):
                 cc=cc_emails,
                 date=date,
                 text_content=text_content,
-                attachments=[],  # To be populated by attachment processor
+                attachments=[],  # Will store attachment IDs
                 tags=[]
             )
             
@@ -168,21 +171,27 @@ class EmailProcessor(BaseProcessor):
                     sharepoint_domain = "tassehcapital-my.sharepoint.com"  # Get from config if available
                     user_email_domain = user_email.split('@')[1]
                     user_name = user_email.split('@')[0]
-                    folder_path = self.config["onedrive"]["processed_emails_folder"]
+                    folder_path = self.processed_emails_folder
                     onedrive_url = f"https://{sharepoint_domain}/personal/{user_name}_{user_email_domain}/Documents/{folder_path}/{new_filename}"
                     email_metadata.one_drive_url = onedrive_url
                 
                 json_content = email_metadata.to_json()
                 
                 # Use proper upload_file method instead of non-existent save_email_content_to_onedrive
-                folder_path = self.config["onedrive"]["processed_emails_folder"]
-                file_path = f"{folder_path}/{new_filename}"
-                user_email = self.config["user"]["email"]
-                upload_response = await self.graph_client.upload_file(
-                    user_email,
-                    file_path,
-                    json_content.encode('utf-8')
-                )
+                file_path = f"{self.processed_emails_folder}/{new_filename}"
+                user_email = config["user"]["email"]
+                try:
+                    upload_response = await self.graph_client.upload_file(
+                        user_email,
+                        file_path,
+                        json_content.encode('utf-8')
+                    )
+                    if not upload_response:
+                        raise ProcessingError("Upload response was empty")
+                    logger.info(f"Successfully uploaded email metadata to {file_path}")
+                except Exception as e:
+                    logger.error(f"Failed to upload email metadata to {file_path}: {str(e)}")
+                    raise ProcessingError(f"Failed to upload email metadata: {str(e)}")
                 
                 # Generate a proper SharePoint URL for the file in OneDrive
                 # The upload_response might not contain the full OneDrive URL we need
@@ -198,45 +207,107 @@ class EmailProcessor(BaseProcessor):
                     email_metadata.one_drive_url = onedrive_url
                 
                 # Add debugging to verify the URL is set
-                logger.debug(f"Set OneDrive URL to: {email_metadata.one_drive_url}")
-                
-                # Re-encode the JSON with the updated URL to ensure it's saved
-                updated_json_content = email_metadata.to_json()
-                
-                # If the URL has been updated, upload the file again to ensure it contains the correct URL
-                if json_content != updated_json_content:
-                    await self.graph_client.upload_file(
-                        user_email,
-                        file_path,
-                        updated_json_content.encode('utf-8')
-                    )
+                logger.debug(f"OneDrive URL for email: {email_metadata.one_drive_url}")
                 
             except Exception as e:
-                logger.error(f"Error saving email metadata: {str(e)}")
-                raise ProcessingError(f"Failed to save email metadata: {str(e)}")
+                logger.error(f"Error uploading email metadata: {str(e)}")
+                # Still continue processing even if upload fails
             
-            # Convert to dict for return
-            # Note: EmailDocumentMetadata.to_dict() renames 'from_' to 'from'
-            metadata_dict = email_metadata.to_dict()
-            # But tests expect 'from_' in the result, so we need to add it back
-            if 'from' in metadata_dict:
-                metadata_dict['from_'] = metadata_dict['from']
+            # Extract attachment info but delegate processing to the AttachmentProcessor
+            attachment_info = []
+            for part in msg.walk():
+                # If the part is an attachment, extract its information
+                if part.get_content_disposition() == 'attachment':
+                    try:
+                        attachment_filename = part.get_filename()
+                        if not attachment_filename:
+                            continue
+                            
+                        attachment_content = part.get_payload(decode=True)
+                        if not attachment_content:
+                            continue
+                            
+                        content_type = part.get_content_type()
+                        if content_type.startswith('image/'):
+                            # Skip image attachments
+                            logger.info(f"Skipping image attachment: {attachment_filename}")
+                            continue
+                            
+                        # Create a hybrid filename
+                        att_ext = os.path.splitext(attachment_filename)[1]
+                        safe_name = ''.join(c for c in attachment_filename if c.isalnum() or c in (' ', '_', '.', '-')).rstrip()
+                        att_id = str(uuid.uuid4())[:8]
+                        safe_att_filename = f"{date_prefix}_{safe_name}_{att_id}{att_ext}"
+                        
+                        # Save attachment directly to the attachments folder
+                        att_path = os.path.join(self.attachments_folder, safe_att_filename)
+                        
+                        # Upload the attachment to OneDrive
+                        await self._upload_to_onedrive(
+                            safe_att_filename,
+                            attachment_content,
+                            self.attachments_folder
+                        )
+                        
+                        # Add attachment ID to email metadata
+                        email_metadata.attachments.append(att_id)
+                        
+                        # Create companion JSON with minimal metadata (AttachmentProcessor will enhance when processing)
+                        attachment_min_metadata = {
+                            'document_id': att_id,
+                            'type': 'attachment',
+                            'filename': safe_att_filename,
+                            'original_filename': attachment_filename,
+                            'one_drive_url': '',
+                            'created_at': datetime.now().isoformat(),
+                            'size': len(attachment_content),
+                            'content_type': content_type,
+                            'source': 'email',
+                            'is_attachment': True,
+                            'parent_email_id': message_id,
+                            # Add email context that will be useful for the attachment
+                            'parent_email_subject': subject,
+                            'parent_email_from': from_email,
+                            'parent_email_date': date
+                        }
+                        
+                        # Save companion JSON
+                        json_filename = f"{safe_att_filename}.json"
+                        json_content = json.dumps(attachment_min_metadata, indent=2, cls=DateTimeEncoder)
+                        await self._upload_to_onedrive(
+                            json_filename,
+                            json_content.encode('utf-8'),
+                            self.attachments_folder
+                        )
+                        
+                        # Add to attachment info list
+                        attachment_info.append({
+                            'id': att_id,
+                            'filename': safe_att_filename,
+                            'path': att_path
+                        })
+                        
+                    except Exception as e:
+                        logger.error(f"Error extracting attachment {part.get_filename() or 'unknown'}: {str(e)}")
             
-            # Ensure one_drive_url is never null or empty in the result
-            if not metadata_dict.get('one_drive_url'):
-                sharepoint_domain = "tassehcapital-my.sharepoint.com"
-                user_email = self.config["user"]["email"]
-                user_email_domain = user_email.split('@')[1]
-                user_name = user_email.split('@')[0]
-                folder_path = self.config["onedrive"]["processed_emails_folder"]
-                metadata_dict['one_drive_url'] = f"https://{sharepoint_domain}/personal/{user_name}_{user_email_domain}/Documents/{folder_path}/{new_filename}"
-                logger.debug(f"Fixed missing OneDrive URL in final result: {metadata_dict['one_drive_url']}")
+            # Update email metadata after processing attachments
+            if attachment_info:
+                # Re-upload the email metadata with updated attachment list
+                email_metadata.filename = new_filename
+                json_content = email_metadata.to_json()
+                file_path = f"{self.processed_emails_folder}/{new_filename}"
+                await self.graph_client.upload_file(
+                    user_email,
+                    file_path,
+                    json_content.encode('utf-8')
+                )
             
+            # Return the processed email data with metadata
             return {
-                "subject": subject,
-                "body": text_content,
-                "filename": new_filename,
-                "metadata": metadata_dict
+                'email_id': message_id,
+                'metadata': email_metadata.to_dict(),
+                'attachments': attachment_info,
+                'text_content': text_content
             }
             
         except Exception as e:
@@ -247,48 +318,63 @@ class EmailProcessor(BaseProcessor):
         """Extract text content from an email message.
         
         Args:
-            msg: Email message object
+            msg: Email message
             
         Returns:
-            Extracted and cleaned text content
+            Extracted text content
         """
-        text_content = None
-        if msg.is_multipart():
-            # First try to find text/plain part
-            for part in msg.walk():
-                if part.get_content_type() == 'text/plain' and not part.get_filename():
-                    text_content = part.get_content()
-                    break
-            # If no text/plain found, try text/html
-            if not text_content:
-                for part in msg.walk():
-                    if part.get_content_type() == 'text/html' and not part.get_filename():
-                        text_content = part.get_content()
-                        break
-        else:
-            if msg.get_content_type() == 'text/plain':
-                text_content = msg.get_content()
-            elif msg.get_content_type() == 'text/html':
-                text_content = msg.get_content()
+        text_content = ""
         
-        return self._clean_text(text_content) if text_content else ''
+        # First try to find a text/plain part
+        for part in msg.walk():
+            content_type = part.get_content_type()
+            if content_type == 'text/plain':
+                payload = part.get_payload(decode=True)
+                if payload:
+                    charset = part.get_content_charset() or 'utf-8'
+                    try:
+                        text = payload.decode(charset, errors='replace')
+                        text_content = self._clean_text(text)
+                        break
+                    except UnicodeDecodeError:
+                        continue
+        
+        # If no text/plain part, try text/html
+        if not text_content:
+            for part in msg.walk():
+                content_type = part.get_content_type()
+                if content_type == 'text/html':
+                    payload = part.get_payload(decode=True)
+                    if payload:
+                        charset = part.get_content_charset() or 'utf-8'
+                        try:
+                            html = payload.decode(charset, errors='replace')
+                            soup = BeautifulSoup(html, 'html.parser')
+                            text_content = self._clean_text(soup.get_text())
+                            break
+                        except UnicodeDecodeError:
+                            continue
+        
+        return text_content
     
     def _parse_email_addresses(self, addresses: List[str]) -> List[str]:
         """Parse email addresses from a list of address strings.
         
         Args:
-            addresses: List of email address strings
+            addresses: List of address strings
             
         Returns:
             List of parsed email addresses
         """
-        if not addresses:
-            return []
-        parsed = email.utils.getaddresses(addresses)
-        return [addr for name, addr in parsed if addr]
+        result = []
+        for address in addresses:
+            # Simple regex to extract email addresses
+            matches = re.findall(r'[\w\.-]+@[\w\.-]+', address)
+            result.extend(matches)
+        return result
     
     def _clean_text(self, text: str) -> str:
-        """Clean text content by removing HTML tags, normalizing whitespace, and replacing smart punctuation.
+        """Clean and normalize text content.
         
         Args:
             text: Raw text content
@@ -298,109 +384,82 @@ class EmailProcessor(BaseProcessor):
         """
         if not text:
             return ""
-        try:
-            # Handle encoding issues
-            if isinstance(text, bytes):
-                text = text.decode('utf-8', errors='replace')
-            elif not isinstance(text, str):
-                text = str(text)
-
-            # Remove HTML comments
-            text = re.sub(r'<!--.*?-->', '', text, flags=re.DOTALL)
-            # Remove HTML tags
-            text = re.sub(r'<[^>]+>', ' ', text)
-            # Convert HTML entities
-            text = unescape(text)
-            # Remove extra whitespace
+            
+        # Decode HTML entities
+        text = unescape(text)
+        
+        # Replace multiple consecutive whitespace (including newlines) with a single space
+        if self.config.get("TEXT_CLEANING", {}).get("REMOVE_EXTRA_WHITESPACE", True):
             text = re.sub(r'\s+', ' ', text)
-            # Remove any remaining HTML/CSS artifacts
-            text = re.sub(r'@media.*?}', '', text, flags=re.DOTALL)
-            text = re.sub(r'Begin.*?-->', '', text, flags=re.DOTALL)
-
-            # Replace smart quotes, dashes, ellipses, etc.
-            smart_map = {
-                '\u2018': "'", '\u2019': "'", '\u201c': '"', '\u201d': '"',
-                '\u2013': '-', '\u2014': '-', '\u2026': '...', '\u2012': '-',
-                '\u2010': '-', '\u2011': '-', '\u00a0': ' ', '\u200b': '',
-                '\u201b': "'", '\u2032': "'", '\u2033': '"',
-            }
-            for uni, repl in smart_map.items():
-                text = text.replace(uni.encode('utf-8').decode('utf-8'), repl)
-            # Replace any remaining problematic replacement chars
-            text = text.replace('\ufffd', '')
-            # Remove any remaining non-printable or non-ASCII characters
-            text = ''.join(char for char in text if (char.isprintable() and ord(char) < 128) or char.isspace())
-            # Normalize whitespace again
-            text = re.sub(r'\s+', ' ', text)
-            return text.strip()
-        except Exception as e:
-            logger.error(f"Error cleaning text content: {str(e)}")
-            return text.strip() if text else ""
+        
+        # Normalize line endings
+        if self.config.get("TEXT_CLEANING", {}).get("NORMALIZE_LINE_ENDINGS", True):
+            text = text.replace("\r\n", "\n").replace("\r", "\n")
+        
+        # Remove control characters except newlines and tabs
+        if self.config.get("TEXT_CLEANING", {}).get("REMOVE_CONTROL_CHARS", True):
+            text = ''.join(ch for ch in text if ch == '\n' or ch == '\t' or not unicodedata.category(ch).startswith('C'))
+        
+        # Remove very common email footers and signatures
+        text = re.sub(r'--+\s*\n.*?Sent from .*?$', '', text, flags=re.DOTALL)
+        text = re.sub(r'--+\s*\n.*?CONFIDENTIAL.*?$', '', text, flags=re.DOTALL)
+        text = re.sub(r'--+\s*\n.*?NOTICE:.*?$', '', text, flags=re.DOTALL)
+        
+        return text.strip()
     
     async def close(self):
-        """Close the Graph client."""
+        """Close any open resources."""
         await self.graph_client.close()
-
+    
     async def _upload_to_onedrive(self, filename: str, content: bytes, folder: str = "") -> str:
-        """Upload a file to OneDrive.
+        """Upload content to OneDrive.
         
         Args:
             filename: Name of the file to upload
-            content: File content in bytes
-            folder: Folder in OneDrive to upload the file to
+            content: Content to upload
+            folder: Folder to upload to
             
         Returns:
             OneDrive URL of the uploaded file
-            
-        Raises:
-            ProcessingError: If upload fails
         """
         try:
-            user_email = self.config["user"]["email"]
-            
-            # Get access token
-            access_token = await self.graph_client._get_access_token()
-            headers = {"Authorization": f"Bearer {access_token}"}
-            
-            # Upload file
-            upload_url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/{folder}/{filename}:/content"
-            response = await self.graph_client.client.put(
-                upload_url,
-                headers=headers,
-                content=content
+            # Determine the full path for the file
+            if folder:
+                file_path = f"{folder}/{filename}"
+            else:
+                file_path = filename
+                
+            # Upload the file
+            user_email = config["user"]["email"]
+            return await self.graph_client.upload_file(
+                user_email,
+                file_path,
+                content
             )
-            response.raise_for_status()
-            
-            # Get webUrl from the upload response
-            file_metadata = response.json()
-            logger.debug(f"OneDrive file metadata response: {file_metadata}")
-            web_url = file_metadata.get("webUrl")
-            if not web_url:
-                raise ProcessingError("Failed to get web URL from OneDrive response")
-            
-            return web_url
-            
         except Exception as e:
             logger.error(f"Error uploading to OneDrive: {str(e)}")
             raise ProcessingError(f"Failed to upload to OneDrive: {str(e)}")
     
     async def _process_impl(self, data: Union[Dict[str, Any], bytes], filename: str = None) -> Dict[str, Any]:
-        """Process an email message (required by BaseProcessor).
+        """Implementation of the email processing logic.
         
         Args:
-            data: Email data as dictionary or raw bytes
-            filename: Optional filename for the email
+            data: Raw email data (either bytes or dict)
+            filename: Optional filename for the processed output
             
         Returns:
-            Dictionary containing processed email data
+            Processed email data
+            
+        Raises:
+            ProcessingError: If processing fails
         """
         try:
-            # For raw EML data (bytes), use the process method
+            # Handle byte data (raw EML)
             if isinstance(data, bytes):
                 return await self._process_email(data, {})
             
-            # For dictionary data (from Graph API), extract metadata and content
-            if isinstance(data, dict):
+            # Handle dict data (from Graph API)
+            elif isinstance(data, dict):
                 # Validate input
                 self._validate_input(data)
                 
@@ -421,7 +480,7 @@ class EmailProcessor(BaseProcessor):
                 # Save metadata
                 metadata['filename'] = filename
                 await self._save_processed_document(
-                    f"{self.config['onedrive']['processed_emails_folder']}/{filename}",
+                    f"{self.processed_emails_folder}/{filename}",
                     metadata
                 )
                 
@@ -544,36 +603,6 @@ class EmailProcessor(BaseProcessor):
             'flag_status': flag_status
         }
     
-    async def _process_attachments(self, attachments: List[Dict[str, Any]], parent_id: str) -> List[Dict[str, Any]]:
-        """Process email attachments.
-        
-        Args:
-            attachments: List of attachment data
-            parent_id: ID of the parent email
-            
-        Returns:
-            List of processed attachments
-        """
-        # Initialize attachment processor if needed
-        if self.attachment_processor is None:
-            from core.processing_1_2_0.processors.attachment_processor import AttachmentProcessor
-            self.attachment_processor = AttachmentProcessor(self.config)
-            
-        processed_attachments = []
-        for attachment in attachments:
-            try:
-                # Add parent email ID to attachment data
-                attachment['parent_email_id'] = parent_id
-                
-                # Process attachment using attachment processor
-                processed = await self.attachment_processor.process(attachment)
-                processed_attachments.append(processed)
-            except Exception as e:
-                logger.error(f"Error processing attachment {attachment.get('name', 'unknown')}: {str(e)}")
-                continue
-        
-        return processed_attachments 
-
     async def file_exists(self, file_path: str) -> bool:
         """Check if a file exists in OneDrive.
         
@@ -584,7 +613,7 @@ class EmailProcessor(BaseProcessor):
             bool: True if the file exists, False otherwise
         """
         try:
-            user_email = self.config["user"]["email"]
+            user_email = config["user"]["email"]
             access_token = await self.graph_client._get_access_token()
             headers = {"Authorization": f"Bearer {access_token}"}
             

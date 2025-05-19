@@ -8,6 +8,15 @@ retrieved from Microsoft Graph API.
 from dataclasses import dataclass, field, asdict
 from typing import List, Optional, Union, Dict, Any
 import json
+from datetime import datetime, timedelta
+
+# Custom JSON encoder to handle datetime objects
+class DateTimeEncoder(json.JSONEncoder):
+    """JSON encoder that converts datetime objects to ISO format strings."""
+    def default(self, obj):
+        if isinstance(obj, (datetime, timedelta)):
+            return obj.isoformat()
+        return super().default(obj)
 
 @dataclass
 class EmailDocumentMetadata:
@@ -51,7 +60,7 @@ class EmailDocumentMetadata:
 
     def to_json(self) -> str:
         """Convert metadata to JSON string."""
-        return json.dumps(self.to_dict(), ensure_ascii=False, indent=2)
+        return json.dumps(self.to_dict(), ensure_ascii=False, indent=2, cls=DateTimeEncoder)
 
     @classmethod
     def from_dict(cls, d: dict) -> 'EmailDocumentMetadata':

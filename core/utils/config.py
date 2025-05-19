@@ -67,6 +67,7 @@ config = {
     "onedrive": {
         "emails_folder": "data_PMSA/emails_1",
         "documents_folder": "data_PMSA/documents_1",
+        "attachments_folder": "data_PMSA/attachments_1",
         "processed_emails_folder": "data_PMSA/processed_emails_2",
         "processed_documents_folder": "data_PMSA/processed_documents_2",
         "processed_chunk_dir": "data_PMSA/processed_chunks",
@@ -90,6 +91,26 @@ config = {
             "EXTRACT_DATE": True,
             "EXTRACT_TITLE": True
         }
+    }
+}
+
+# Consolidated processing configuration used by processing_1_2_0 module
+PROCESSING_CONFIG = {
+    "MAX_FILE_SIZE": config["processing"]["MAX_FILE_SIZE"],
+    "MAX_ATTACHMENT_SIZE": config["processing"]["MAX_ATTACHMENT_SIZE"],
+    "ALLOWED_EXTENSIONS": config["processing"]["ALLOWED_EXTENSIONS"],
+    "CONTENT_TYPES": config["processing"]["CONTENT_TYPES"],
+    "TEXT_CLEANING": config["processing"]["TEXT_CLEANING"],
+    "METADATA": config["processing"]["METADATA"],
+    "FOLDERS": {
+        "EMAILS": config["onedrive"]["emails_folder"],
+        "DOCUMENTS": config["onedrive"]["documents_folder"],
+        "ATTACHMENTS": config["onedrive"]["attachments_folder"],
+        "PROCESSED_EMAILS": config["onedrive"]["processed_emails_folder"],
+        "PROCESSED_DOCUMENTS": config["onedrive"]["processed_documents_folder"],
+        "PROCESSED_CHUNKS": config["onedrive"]["processed_chunk_dir"],
+        "EMBEDDINGS": config["onedrive"]["embeddings_dir"],
+        "LOGS": config["onedrive"]["logs_dir"]
     }
 }
 
