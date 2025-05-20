@@ -71,6 +71,10 @@ class AssistantConfig(BaseModel):
     instructions: str = "Answer only from the provided company documents."
     file_ids: Optional[List[str]] = None
 
+@app.get("/")
+def root():
+    return {"status": "OK"}
+
 @app.get("/health")
 async def health_check() -> Dict[str, Any]:
     """Health check endpoint to verify API status"""
