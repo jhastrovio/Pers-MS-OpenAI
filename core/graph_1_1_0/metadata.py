@@ -33,7 +33,6 @@ class EmailDocumentMetadata:
     source: str = None
     is_attachment: bool = False
     parent_email_id: str = None
-    parent_document_id: str = None
     message_id: str = None
     subject: str = None
     from_: str = None  # Using underscore to avoid conflict with Python keyword
