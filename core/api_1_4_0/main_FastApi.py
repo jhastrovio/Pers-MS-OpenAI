@@ -1,10 +1,11 @@
 from dotenv import load_dotenv
 import os, uuid, asyncio, openai
 import logging
-from fastapi import FastAPI, Header, HTTPException
+from fastapi import FastAPI, Header, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel
-from typing import Dict, Any, List, Optional
+from fastapi.responses import JSONResponse
+from pydantic import BaseModel, Field
+from typing import Dict, Any, List, Optional, Union
 from .assistant import assistant_manager
 
 # Configure logging
@@ -40,8 +41,16 @@ ALLOWED_HEADERS = ["*"]
 threads: Dict[str, str] = {}   # {conversation_id: thread_id}
 
 class Ask(BaseModel):
-    conversation_id: str | None = None
-    query:           str
+    conversation_id: Optional[str] = Field(None, description="Unique identifier for the conversation. If not provided, a new conversation will be created.")
+    query: str = Field(..., description="The user's question or message to the assistant")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "conversation_id": None,
+                "query": "Hello, can you help me with a question?"
+            }
+        }
 
 class APIError(Exception):
     def __init__(self, status_code: int, message: str):
@@ -49,10 +58,34 @@ class APIError(Exception):
         self.message = message
         super().__init__(self.message)
 
+class HealthResponse(BaseModel):
+    status: str = Field(..., description="Health status of the API")
+    version: str = Field(..., description="API version")
+    openai_configured: bool = Field(..., description="Whether OpenAI API is configured")
+    assistant_configured: bool = Field(..., description="Whether the assistant is configured")
+
+class AskResponse(BaseModel):
+    conversation_id: str = Field(..., description="Unique identifier for the conversation")
+    answer: str = Field(..., description="The assistant's response")
+
+class AssistantCreateResponse(BaseModel):
+    assistant_id: str = Field(..., description="The ID of the created or retrieved assistant")
+
+class AssistantInfoResponse(BaseModel):
+    id: str = Field(..., description="The assistant's ID")
+    name: str = Field(..., description="The assistant's name")
+    model: str = Field(..., description="The model used by the assistant")
+    tools: List[str] = Field(..., description="List of tools the assistant can use")
+    instructions: Optional[str] = Field(None, description="Instructions for the assistant")
+
 app = FastAPI(
     title="Assistant API",
     description="API for interacting with OpenAI Assistant",
-    version="1.4.0"
+    version="1.4.0",
+    docs_url="/docs",
+    redoc_url="/redoc",
+    openapi_url="/openapi.json",
+    swagger_ui_parameters={"defaultModelsExpandDepth": -1}
 )
 
 # Configure CORS
@@ -65,19 +98,36 @@ app.add_middleware(
 )
 
 class AssistantConfig(BaseModel):
-    name: str = "Knowledge-Assistant"
-    model: str = "gpt-4-turbo-preview"
-    tools: List[str] = ["file_search"]
-    instructions: str = "Answer only from the provided company documents."
-    file_ids: Optional[List[str]] = None
+    name: str = Field("Knowledge-Assistant", description="The name of the assistant")
+    model: str = Field("gpt-4-turbo-preview", description="The OpenAI model to use")
+    tools: List[str] = Field(["file_search"], description="List of tools the assistant can use")
+    instructions: str = Field("Answer only from the provided company documents.", description="Instructions for the assistant")
+    file_ids: Optional[List[str]] = Field(None, description="List of file IDs to attach to the assistant")
+    
+    class Config:
+        schema_extra = {
+            "example": {
+                "name": "Knowledge-Assistant",
+                "model": "gpt-4-turbo-preview",
+                "tools": ["file_search"],
+                "instructions": "Answer only from the provided company documents.",
+                "file_ids": None
+            }
+        }
 
 @app.get("/")
 def root():
+    """Root endpoint to check if the API is running"""
     return {"status": "OK"}
 
-@app.get("/health")
+@app.get("/health", response_model=HealthResponse, tags=["System"])
 async def health_check() -> Dict[str, Any]:
-    """Health check endpoint to verify API status"""
+    """
+    Health check endpoint to verify API status
+    
+    Returns:
+        Dict with status information about the API
+    """
     return {
         "status": "healthy",
         "version": "1.4.0",
@@ -85,8 +135,21 @@ async def health_check() -> Dict[str, Any]:
         "assistant_configured": bool(ASSISTANT_ID)
     }
 
-@app.post("/ask")
-async def ask(body: Ask, x_api_key: str = Header(default="")):
+@app.post("/ask", response_model=AskResponse, tags=["Assistant"], responses={
+    401: {"description": "Invalid API key"},
+    500: {"description": "Internal server error"}
+})
+async def ask(body: Ask, x_api_key: str = Header(default="")) -> Dict[str, Any]:
+    """
+    Send a question to the assistant and get a response
+    
+    Args:
+        body: The question and optional conversation ID
+        x_api_key: API key for authentication
+        
+    Returns:
+        Dict with conversation ID and assistant's answer
+    """
     try:
         if x_api_key != API_KEY_PROXY:
             raise APIError(401, "Invalid API key")
@@ -140,12 +203,24 @@ async def ask(body: Ask, x_api_key: str = Header(default="")):
     except Exception as e:
         raise HTTPException(500, f"Internal server error: {str(e)}")
 
-@app.post("/assistant/create")
+@app.post("/assistant/create", response_model=AssistantCreateResponse, tags=["Assistant"], responses={
+    401: {"description": "Invalid API key"},
+    500: {"description": "Internal server error"}
+})
 async def create_assistant(
     config: AssistantConfig,
     x_api_key: str = Header(default="")
 ) -> Dict[str, Any]:
-    """Get existing assistant or create new one if none exists"""
+    """
+    Get existing assistant or create new one if none exists
+    
+    Args:
+        config: Configuration for the assistant
+        x_api_key: API key for authentication
+        
+    Returns:
+        Dict with the assistant ID
+    """
     try:
         if x_api_key != API_KEY_PROXY:
             raise APIError(401, "Invalid API key")
@@ -163,9 +238,20 @@ async def create_assistant(
         logger.error("Error with assistant: %s", str(e))
         raise HTTPException(500, str(e))
 
-@app.get("/assistant/info")
+@app.get("/assistant/info", response_model=AssistantInfoResponse, tags=["Assistant"], responses={
+    401: {"description": "Invalid API key"},
+    500: {"description": "Internal server error"}
+})
 async def get_assistant_info(x_api_key: str = Header(default="")) -> Dict[str, Any]:
-    """Get information about the current assistant"""
+    """
+    Get information about the current assistant
+    
+    Args:
+        x_api_key: API key for authentication
+        
+    Returns:
+        Dict with assistant information including ID, name, model, etc.
+    """
     try:
         if x_api_key != API_KEY_PROXY:
             raise APIError(401, "Invalid API key")
