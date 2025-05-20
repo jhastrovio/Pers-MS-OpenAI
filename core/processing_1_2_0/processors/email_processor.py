@@ -388,7 +388,83 @@ class EmailProcessor(BaseProcessor):
         # Decode HTML entities
         text = unescape(text)
         
-        # Replace multiple consecutive whitespace (including newlines) with a single space
+        # Common email signature and footer patterns
+        signature_patterns = [
+            # Email signatures
+            r'--+\s*\n.*?Sent from .*?$',
+            r'--+\s*\n.*?CONFIDENTIAL.*?$',
+            r'--+\s*\n.*?NOTICE:.*?$',
+            r'--+\s*\n.*?Disclaimer:.*?$',
+            r'--+\s*\n.*?This email.*?$',
+            r'--+\s*\n.*?Please consider.*?$',
+            r'--+\s*\n.*?Best regards.*?$',
+            r'--+\s*\n.*?Regards.*?$',
+            r'--+\s*\n.*?Thanks.*?$',
+            r'--+\s*\n.*?Cheers.*?$',
+            r'--+\s*\n.*?Kind regards.*?$',
+            r'--+\s*\n.*?Yours sincerely.*?$',
+            r'--+\s*\n.*?Yours truly.*?$',
+            r'--+\s*\n.*?Best wishes.*?$',
+            r'--+\s*\n.*?Sincerely.*?$',
+            r'--+\s*\n.*?Warm regards.*?$',
+            r'--+\s*\n.*?Best.*?$',
+            r'--+\s*\n.*?Regards.*?$',
+            r'--+\s*\n.*?Thanks.*?$',
+            r'--+\s*\n.*?Cheers.*?$',
+            r'--+\s*\n.*?Kind regards.*?$',
+            r'--+\s*\n.*?Yours sincerely.*?$',
+            r'--+\s*\n.*?Yours truly.*?$',
+            r'--+\s*\n.*?Best wishes.*?$',
+            r'--+\s*\n.*?Sincerely.*?$',
+            r'--+\s*\n.*?Warm regards.*?$',
+            # Common footer patterns
+            r'--+\s*\n.*?CONFIDENTIALITY NOTICE.*?$',
+            r'--+\s*\n.*?PRIVACY NOTICE.*?$',
+            r'--+\s*\n.*?LEGAL NOTICE.*?$',
+            r'--+\s*\n.*?DISCLAIMER.*?$',
+            r'--+\s*\n.*?This message.*?$',
+            r'--+\s*\n.*?This email.*?$',
+            r'--+\s*\n.*?Please note.*?$',
+            r'--+\s*\n.*?This communication.*?$',
+            r'--+\s*\n.*?This transmission.*?$',
+            r'--+\s*\n.*?This e-mail.*?$',
+            # Social media and contact info
+            r'--+\s*\n.*?LinkedIn.*?$',
+            r'--+\s*\n.*?Twitter.*?$',
+            r'--+\s*\n.*?Facebook.*?$',
+            r'--+\s*\n.*?Instagram.*?$',
+            r'--+\s*\n.*?Phone:.*?$',
+            r'--+\s*\n.*?Mobile:.*?$',
+            r'--+\s*\n.*?Tel:.*?$',
+            r'--+\s*\n.*?Fax:.*?$',
+            r'--+\s*\n.*?Web:.*?$',
+            r'--+\s*\n.*?Website:.*?$',
+            r'--+\s*\n.*?www\..*?$',
+            r'--+\s*\n.*?http.*?$',
+            # Company info
+            r'--+\s*\n.*?Company.*?$',
+            r'--+\s*\n.*?Address:.*?$',
+            r'--+\s*\n.*?Registered.*?$',
+            r'--+\s*\n.*?VAT.*?$',
+            r'--+\s*\n.*?Reg No.*?$',
+            r'--+\s*\n.*?ABN.*?$',
+            r'--+\s*\n.*?ACN.*?$',
+            # Forwarded email markers
+            r'--+\s*\n.*?Forwarded by.*?$',
+            r'--+\s*\n.*?Begin forwarded message.*?$',
+            r'--+\s*\n.*?From:.*?$',
+            r'--+\s*\n.*?Date:.*?$',
+            r'--+\s*\n.*?Subject:.*?$',
+            r'--+\s*\n.*?To:.*?$',
+            r'--+\s*\n.*?Cc:.*?$',
+            r'--+\s*\n.*?Bcc:.*?$',
+        ]
+        
+        # Remove signatures and footers
+        for pattern in signature_patterns:
+            text = re.sub(pattern, '', text, flags=re.DOTALL | re.IGNORECASE)
+        
+        # Remove multiple consecutive whitespace (including newlines)
         if self.config.get("TEXT_CLEANING", {}).get("REMOVE_EXTRA_WHITESPACE", True):
             text = re.sub(r'\s+', ' ', text)
         
@@ -400,11 +476,13 @@ class EmailProcessor(BaseProcessor):
         if self.config.get("TEXT_CLEANING", {}).get("REMOVE_CONTROL_CHARS", True):
             text = ''.join(ch for ch in text if ch == '\n' or ch == '\t' or not unicodedata.category(ch).startswith('C'))
         
-        # Remove very common email footers and signatures
-        text = re.sub(r'--+\s*\n.*?Sent from .*?$', '', text, flags=re.DOTALL)
-        text = re.sub(r'--+\s*\n.*?CONFIDENTIAL.*?$', '', text, flags=re.DOTALL)
-        text = re.sub(r'--+\s*\n.*?NOTICE:.*?$', '', text, flags=re.DOTALL)
+        # Remove any remaining dashes that might be part of signatures
+        text = re.sub(r'--+\s*$', '', text, flags=re.MULTILINE)
         
+        # Remove any remaining empty lines
+        text = re.sub(r'\n\s*\n', '\n', text)
+        
+        # Remove any remaining whitespace at the start and end
         return text.strip()
     
     async def close(self):
