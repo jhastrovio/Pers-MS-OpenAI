@@ -26,6 +26,34 @@ class AssistantManager:
         self.assistant_id = os.environ.get("ASSISTANT_ID")
         logger.info(f"Assistant ID from env: {self.assistant_id}")
         
+    async def get_or_create_assistant(
+        self,
+        name: str = "Knowledge-Assistant",
+        model: str = "gpt-4-turbo-preview",
+        tools: List[str] = ["file_search"],
+        instructions: str = "Answer only from the provided company documents.",
+        file_ids: Optional[List[str]] = None
+    ) -> str:
+        """Get existing assistant or create new one if none exists"""
+        if self.assistant_id:
+            try:
+                # Verify the assistant exists
+                await self.get_assistant()
+                logger.info(f"Using existing assistant with ID: {self.assistant_id}")
+                return self.assistant_id
+            except Exception as e:
+                logger.warning(f"Existing assistant not found: {str(e)}, creating new one")
+                self.assistant_id = None
+                
+        # Create new assistant if none exists
+        return await self.create_assistant(
+            name=name,
+            model=model,
+            tools=tools,
+            instructions=instructions,
+            file_ids=file_ids
+        )
+        
     async def create_assistant(
         self,
         name: str = "Knowledge-Assistant",
@@ -53,6 +81,7 @@ class AssistantManager:
                 
             logger.info(f"Creating assistant with params: {params}")
             assistant = self.client.beta.assistants.create(**params)
+            self.assistant_id = assistant.id  # Update the instance variable
             logger.info(f"Successfully created assistant with ID: {assistant.id}")
             return assistant.id
         except Exception as e:

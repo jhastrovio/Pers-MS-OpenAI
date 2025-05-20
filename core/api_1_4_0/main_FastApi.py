@@ -145,13 +145,13 @@ async def create_assistant(
     config: AssistantConfig,
     x_api_key: str = Header(default="")
 ) -> Dict[str, Any]:
-    """Create a new assistant with the specified configuration"""
+    """Get existing assistant or create new one if none exists"""
     try:
         if x_api_key != API_KEY_PROXY:
             raise APIError(401, "Invalid API key")
             
-        logger.info("Creating new assistant with config: %s", config.dict())
-        assistant_id = await assistant_manager.create_assistant(
+        logger.info("Getting or creating assistant with config: %s", config.dict())
+        assistant_id = await assistant_manager.get_or_create_assistant(
             name=config.name,
             model=config.model,
             tools=config.tools,
@@ -160,7 +160,7 @@ async def create_assistant(
         )
         return {"assistant_id": assistant_id}
     except Exception as e:
-        logger.error("Error creating assistant: %s", str(e))
+        logger.error("Error with assistant: %s", str(e))
         raise HTTPException(500, str(e))
 
 @app.get("/assistant/info")

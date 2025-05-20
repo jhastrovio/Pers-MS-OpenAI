@@ -53,17 +53,7 @@ def test_health(api_headers):
     assert response.json()["status"] == "healthy"
 
 def test_assistant_creation(api_headers):
-    """Test creating a new assistant or getting existing one"""
-    # First try to get existing assistant
-    try:
-        response = make_request("GET", "/assistant/info", headers=api_headers)
-        if response.status_code == 200:
-            logger.info("Using existing assistant")
-            return response.json()["id"]
-    except Exception as e:
-        logger.info(f"No existing assistant found: {str(e)}")
-
-    # If no existing assistant, create a new one
+    """Test getting existing assistant or creating a new one"""
     data = {
         "name": "Test Assistant",
         "model": "gpt-4-turbo-preview",
@@ -73,7 +63,7 @@ def test_assistant_creation(api_headers):
     response = make_request("POST", "/assistant/create", data=data, headers=api_headers)
     assert response.status_code == 200
     assert "assistant_id" in response.json()
-    return response.json()["assistant_id"]
+    assert response.json()["assistant_id"] is not None
 
 def test_assistant_info(api_headers):
     """Test getting assistant information"""
@@ -91,7 +81,8 @@ def test_ask_endpoint(api_headers):
     assert response.status_code == 200
     assert "conversation_id" in response.json()
     assert "answer" in response.json()
-    return response.json()
+    assert response.json()["conversation_id"] is not None
+    assert response.json()["answer"] is not None
 
 def test_invalid_token():
     """Test API with invalid token"""
@@ -108,16 +99,28 @@ class TestAPIEndpoints:
     
     def test_full_conversation_flow(self, api_headers):
         """Test a complete conversation flow"""
-        # Get or create assistant
-        assistant_id = test_assistant_creation(api_headers)
-        assert assistant_id is not None
+        # Test assistant creation
+        data = {
+            "name": "Test Assistant",
+            "model": "gpt-4-turbo-preview",
+            "tools": ["file_search"],
+            "instructions": "This is a test assistant"
+        }
+        create_response = make_request("POST", "/assistant/create", data=data, headers=api_headers)
+        assert create_response.status_code == 200
+        assert "assistant_id" in create_response.json()
         
         # Get assistant info
         info_response = make_request("GET", "/assistant/info", headers=api_headers)
         assert info_response.status_code == 200
-        info = info_response.json()
-        assert info is not None
+        assert "id" in info_response.json()
+        assert "name" in info_response.json()
         
         # Send a message
-        response = test_ask_endpoint(api_headers)
-        assert response is not None 
+        ask_data = {
+            "query": "Hello, this is a test message"
+        }
+        ask_response = make_request("POST", "/ask", data=ask_data, headers=api_headers)
+        assert ask_response.status_code == 200
+        assert "conversation_id" in ask_response.json()
+        assert "answer" in ask_response.json() 
