@@ -1,33 +1,63 @@
-import os
-os.environ["OPENAI_API_TYPE"] = "openai"
-
 import pytest
-from unittest.mock import patch
-from core.storage_1_3_0.vector_repository import upload_to_openai_vector_store
+import asyncio
+from pathlib import Path
+import orjson
+from datetime import datetime
 
-def test_upload_to_openai_vector_store_success():
-    sample_text = "Hello world"
-    sample_metadata = {"filename": "test.txt", "author": "Test"}
-    collection = "test-collection"
-    fake_response = {"id": "doc-123", "status": "uploaded"}
+from openai import OpenAI
+from core.storage_1_3_0.vector_repository import VectorRepository
+from core.utils.config import config
 
-    with patch("openai.vector_stores.documents.create", return_value=fake_response) as mock_create:
-        response = upload_to_openai_vector_store(sample_text, sample_metadata, collection)
-        mock_create.assert_called_once_with(
-            vector_store_id=collection,
-            file={
-                "text": sample_text,
-                "metadata": sample_metadata
-            }
-        )
-        assert response == fake_response
+@pytest.mark.asyncio
+async def test_vector_repository_upload():
+    """Test uploading a single document to the vector store."""
+    # Create a test vector store first
+    client = OpenAI(api_key=config["openai"]["api_key"])
+    vector_store = client.vector_stores.create(
+        name="test-vector-store"
+    )
+    
+    # Create test data
+    test_data = {
+        "subject": "Test Email",
+        "from_": "test@example.com",
+        "to": ["recipient@example.com"],
+        "cc": ["cc@example.com"],
+        "body": "This is the email body",
+        "filename": "test_email.msg",
+        "text_content": "This is the full text content of the email for vector storage.",
+        "created_at": datetime.now().isoformat(),
+        "last_modified": datetime.now().isoformat(),
+        "parent_email_id": "12345",
+        "tags": ["test", "email"],
+        "one_drive_url": "https://onedrive.com/test/12345"
+    }
 
-def test_upload_to_openai_vector_store_failure():
-    sample_text = "Hello world"
-    sample_metadata = {"filename": "test.txt", "author": "Test"}
-    collection = "test-collection"
+    # Create test directory and file
+    test_dir = Path("test_data")
+    test_dir.mkdir(exist_ok=True)
+    test_file = test_dir / "test_email.json"
+    test_file.write_bytes(orjson.dumps(test_data))
 
-    with patch("openai.vector_stores.documents.create", side_effect=Exception("API error")):
-        with pytest.raises(RuntimeError) as excinfo:
-            upload_to_openai_vector_store(sample_text, sample_metadata, collection)
-        assert "Failed to upload to OpenAI vector store" in str(excinfo.value) 
+    try:
+        # Initialize repository with the new vector store ID
+        repo = VectorRepository()
+        repo.store_id = vector_store.id  # Override the store ID with our test store
+        
+        # Test single upload
+        success = await repo.upload_document(test_file)
+        assert success, "Failed to upload single document"
+
+        # Test batch upload
+        stats = await repo.batch_upload(test_dir)
+        assert stats["success"] > 0, "Failed to process batch upload"
+        assert stats["failed"] == 0, "Unexpected failures in batch upload"
+
+    finally:
+        # Cleanup
+        test_file.unlink()
+        test_dir.rmdir()
+        # Note: We're not deleting the vector store as the API doesn't support deletion yet
+
+if __name__ == "__main__":
+    asyncio.run(test_vector_repository_upload()) 
