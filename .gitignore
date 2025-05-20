@@ -28,7 +28,6 @@ logs/
 # Environment and Secrets
 .env
 config/secrets.json
-config/scrt_frmt.txt
 
 # Data directories
 data/
