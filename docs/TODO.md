@@ -17,7 +17,6 @@
 ## Retrieval & Prompt Engineering
 ### RAG Endpoint & Filters
 - [ ] Use your FastAPI /rag endpoint with file_search tool integration as in ADR-006
-- [ ] Do I need an agents.md 
 - [ ] Test attribute-filtered calls to surface only relevant segment
 
 ### Prompt Templates & Context Windows
