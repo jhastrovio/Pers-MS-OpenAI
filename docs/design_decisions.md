@@ -62,8 +62,7 @@ Semantic & attribute‑filtered retrieval via Responses API
 | ADR‑004 | Structured JSON **attributes** schema for answers            | Accepted  | 10 May 2025 |
 | ADR‑005 | OpenAI Vector Store for Phase 1–2 storage                    | Accepted  | 10 May 2025 |
 | ADR‑006 | Custom GPT Action → Tiny Proxy → Responses API & File Search | Accepted  | 13 May 2025 |
-| ADR‑007 | Microsoft Authentication Library (MSAL) for OAuth2           | Proposed  | –           |
-| ADR‑008 | Azure Application Insights for observability                 | Proposed  | –           |
+                | Proposed  | –           |
 | ADR‑009 | Catalogue of rejected alternatives                           | Catalogue | 13 May 2025 |
 
 ---

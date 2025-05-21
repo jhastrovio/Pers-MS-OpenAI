@@ -1,6 +1,6 @@
 # Pers MS OpenAI – Project Roadmap
 
-Version: 1.0 – 14 May 2025
+Version: 1.1 – Updated: May 2024
 
 ## 📋 Project Overview
 
@@ -9,30 +9,35 @@ This roadmap tracks the implementation status and future work for the Pers MS Op
 ## 🎯 Phase 1: Core Infrastructure (Current)
 
 ### Data Ingestion Pipeline
-- [ ] 1.1.0: Microsoft Graph Integration
-  - [ ] 1.1.1: Email extraction service
-  - [ ] 1.1.2: OneDrive document sync
-  - [ ] 1.1.3: MSAL authentication setup
+- [x] 1.1.0: Microsoft Graph Integration
+  - [x] 1.1.1: Email extraction service
+  - [x] 1.1.2: OneDrive document sync
+  - [x] 1.1.3: MSAL authentication setup
 
-- [ ] 1.2.0: Data Processing
-  - [ ] 1.2.1: Email cleaning & enrichment
-  - [ ] 1.2.2: Document text extraction
-  - [ ] 1.2.3: Attachment processing
+- [x] 1.2.0: Data Processing
+  - [x] 1.2.1: Email cleaning & enrichment
+  - [x] 1.2.2: Document text extraction
+  - [x] 1.2.3: Attachment processing
 
-- [ ] 1.3.0: Storage Layer
-  - [ ] 1.3.1: OneDrive folder structure setup
-  - [ ] 1.3.2: JSON schema implementation
-  - [ ] 1.3.3: JSONL batch processing
+- [x] 1.3.0: Storage Layer
+  - [x] 1.3.1: OneDrive folder structure setup
+  - [x] 1.3.2: JSON schema implementation
+  - [x] 1.3.3: JSONL batch processing
 
 ### API & Vector Store
-- [ ] 1.4.0: FastAPI Backend
-  - [ ] 1.4.1: Health check endpoints
-  - [ ] 1.4.2: RAG endpoint implementation
-  - [ ] 1.4.3: Error handling & logging
+- [x] 1.4.0: FastAPI Backend
+  - [x] 1.4.1: Health check endpoints
+  - [x] 1.4.2: RAG endpoint implementation
+  - [x] 1.4.3: Error handling & logging
+  - [x] 1.4.4: Vercel Deployment 
+    - [x] 1.4.4.1: Entry point configuration (`vercel_entry.py`)
+    - [x] 1.4.4.2: Serverless function setup (`vercel.json`)
+    - [x] 1.4.4.3: Environment variable management
+    - [x] 1.4.4.4: Deployment optimization (`.vercelignore`)
 
-- [ ] 1.5.0: OpenAI Integration
-  - [ ] 1.5.1: Vector store setup
-  - [ ] 1.5.2: Attribute filtering
+- [x] 1.5.0: OpenAI Integration
+  - [x] 1.5.1: Vector store setup
+  - [x] 1.5.2: Attribute filtering
   - [ ] 1.5.3: Response streaming
 
 ## 🎯 Phase 2: Enhancement & Scale
@@ -54,30 +59,25 @@ This roadmap tracks the implementation status and future work for the Pers MS Op
 ### Code Structure
 ```
 core/
-├── 1.1.0-graph/           # Microsoft Graph integration
-├── 1.2.0-processing/      # Data processing services
-├── 1.3.0-storage/         # Storage layer implementation
-├── 1.4.0-api/            # FastAPI backend
-└── 1.5.0-openai/         # OpenAI integration
-```
-
-### Data Structure
-```
-data/
-├── 1.1.0-raw/            # Raw data from Graph
-├── 1.2.0-processed/      # Cleaned & enriched data
-├── 1.3.0-storage/        # OneDrive sync files
-└── 1.5.0-vector/         # Vector store data
+├── graph_1_1_0/          # Microsoft Graph integration
+├── processing_1_2_0/     # Data processing services
+├── storage_1_3_0/        # Storage layer implementation
+├── api_1_4_0/            # FastAPI backend
+├── openai_1_5_0/         # OpenAI integration
+└── utils/                # Shared utilities
 ```
 
 ## 📊 Progress Tracking
 
 | Phase | Component | Status | Target Date |
 |-------|-----------|---------|-------------|
-| 1     | Graph Integration | Not Started | TBD |
-| 1     | Data Processing | Not Started | TBD |
-| 1     | Storage Layer | Not Started | TBD |
-| 1     | API & Vector Store | Not Started | TBD |
+| 1     | Graph Integration | Completed | May 2024 |
+| 1     | Data Processing | Completed | May 2024 |
+| 1     | Storage Layer | Completed | May 2024 |
+| 1     | API & Vector Store | Completed | May 2024 |
+| 1     | OpenAI Integration | In Progress (90%) | May 2024 |
+| 2     | Observability | Not Started | TBD |
+| 2     | Incremental Updates | Not Started | TBD |
 
 ## 🔄 Version Control
 
@@ -92,3 +92,5 @@ data/
 - Each component should be independently deployable
 - Monitor vector store usage to stay within 10k document limit
 - Regular backups of OneDrive data required
+- Integration tests have been implemented for all Phase 1 components
+- Vercel deployment provides serverless API hosting with automatic scaling
