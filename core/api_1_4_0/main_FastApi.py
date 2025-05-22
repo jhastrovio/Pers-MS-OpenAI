@@ -1,6 +1,7 @@
 from dotenv import load_dotenv
 import os, uuid, asyncio, openai
 import logging
+from core.utils.logging import configure_logging
 from fastapi import FastAPI, Header, HTTPException, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -9,7 +10,7 @@ from typing import Dict, Any, List, Optional, Union
 from .assistant import assistant_manager
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+configure_logging(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load environment variables

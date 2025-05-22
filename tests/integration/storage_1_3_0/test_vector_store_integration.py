@@ -1,11 +1,12 @@
 import pytest
 import asyncio
 import logging
+from core.utils.logging import configure_logging
 from core.storage_1_3_0.vector_repository import VectorRepository
 from core.utils.config import config
 from core.utils.onedrive_utils import list_folder_contents
 
-logging.basicConfig(level=logging.INFO)
+configure_logging(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 @pytest.mark.asyncio

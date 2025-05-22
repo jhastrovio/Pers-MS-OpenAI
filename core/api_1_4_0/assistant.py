@@ -1,11 +1,12 @@
 from dotenv import load_dotenv
 import os
 import logging
+from core.utils.logging import configure_logging
 from openai import OpenAI
 from typing import List, Optional
 
 # Configure logging
-logging.basicConfig(level=logging.INFO)
+configure_logging(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Load environment variables
