@@ -64,6 +64,51 @@ async def clear_folder(folder_path: str) -> None:
     except Exception as e:
         raise Exception(f"Failed to clear folder {folder_path}: {str(e)}")
 
+async def load_json_file(file_path: str) -> dict:
+    """Load a JSON file from OneDrive and return its contents as a dict.
+    Args:
+        file_path: Path to the file in OneDrive
+    Returns:
+        The loaded JSON data as a dict
+    Raises:
+        Exception if loading or parsing fails
+    """
+    try:
+        client = GraphClient()
+        user_email = config["user"]["email"]
+        access_token = await client._get_access_token()
+        headers = {"Authorization": f"Bearer {access_token}"}
+        # Normalize file path for OneDrive API
+        file_path = file_path.replace('\\', '/').strip('/')
+        url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/{file_path}:/content"
+        response = await client.client.get(url, headers=headers)
+        response.raise_for_status()
+        return response.json() if hasattr(response, 'json') else response.json()
+    except Exception as e:
+        print(f"Error loading JSON file from OneDrive: {str(e)}")
+        raise
+
+async def save_json_file(file_path: str, data: dict) -> None:
+    """Save a dict as a JSON file to OneDrive.
+    Args:
+        file_path: Path to save the file in OneDrive
+        data: The dict to save as JSON
+    Raises:
+        Exception if saving fails
+    """
+    import json
+    try:
+        client = GraphClient()
+        user_email = config["user"]["email"]
+        # Convert dict to JSON bytes
+        content_bytes = json.dumps(data, indent=2).encode('utf-8')
+        # Normalize file path for OneDrive API
+        file_path = file_path.replace('\\', '/').strip('/')
+        await client.upload_file(user_email, file_path, content_bytes)
+    except Exception as e:
+        print(f"Error saving JSON file to OneDrive: {str(e)}")
+        raise
+
 if __name__ == "__main__":
     import asyncio
     

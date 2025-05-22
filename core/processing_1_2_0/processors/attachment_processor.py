@@ -91,7 +91,7 @@ class AttachmentProcessor(BaseProcessor):
 
         # Blend/merge metadata: only specified email fields from JSON
         EMAIL_FIELDS = {
-            "parent_email_id", "parent_document_id", "message_id", "subject", "to", "cc", "date", "title", "author"
+            "parent_email_id", "message_id", "subject", "date", "title", "author", "tags"
         }
         meta = result.get('metadata', {})
         if hasattr(meta, 'to_dict'):
@@ -102,13 +102,34 @@ class AttachmentProcessor(BaseProcessor):
         for k in EMAIL_FIELDS:
             if k in json_fields:
                 blended_meta[k] = json_fields[k]
+        # Combine 'to' and 'cc' into 'recipients' if present
+        recipients = []
+        if 'to' in json_fields and isinstance(json_fields['to'], list):
+            recipients.extend(json_fields['to'])
+        if 'cc' in json_fields and isinstance(json_fields['cc'], list):
+            recipients.extend(json_fields['cc'])
+        if recipients:
+            blended_meta['recipients'] = recipients
+        # Set 'type' to file extension
+        if filename:
+            file_ext = os.path.splitext(filename)[1].lower().lstrip('.')
+            blended_meta['type'] = file_ext or 'attachment'
+        # Set 'date' to last_modified if available
+        if 'last_modified' in doc_meta:
+            blended_meta['date'] = doc_meta['last_modified']
+        elif 'last_modified' in json_fields:
+            blended_meta['date'] = json_fields['last_modified']
         # Ensure required attachment fields are set
-        blended_meta['type'] = 'attachment'
         blended_meta['is_attachment'] = True
-        blended_meta['onedrive_path'] = onedrive_path
         if 'filename' not in blended_meta and filename:
             blended_meta['filename'] = filename
-
+        # Remove fields not in EmailDocumentMetadata
+        valid_fields = {
+            'document_id', 'type', 'filename', 'source_url', 'is_attachment', 'parent_email_id',
+            'message_id', 'subject', 'from_', 'recipients', 'date', 'title', 'author',
+            'attachments', 'tags', 'text_content'
+        }
+        blended_meta = {k: v for k, v in blended_meta.items() if k in valid_fields}
         # Return the result with blended metadata
         result['metadata'] = blended_meta
         return result

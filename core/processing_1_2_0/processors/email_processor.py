@@ -6,9 +6,9 @@ extract their content and metadata, and store processed results in OneDrive
 via Microsoft Graph API.
 """
 
-from typing import Dict, Any, List, Union
+from typing import Dict, Any, List, Union, Optional, Set
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 import uuid
 import email
 from email import policy
@@ -33,6 +33,9 @@ from core.utils.filename_utils import create_hybrid_filename
 
 logger = get_logger(__name__)
 
+# Current schema version for email metadata
+SCHEMA_VERSION = "1.0.0"
+
 # Define allowed attachment types
 ALLOWED_ATTACHMENT_TYPES = {
     'application/pdf',
@@ -46,6 +49,14 @@ ALLOWED_ATTACHMENT_TYPES = {
     'text/html',
     'text/csv'
 }
+
+@dataclasses.dataclass
+class ProcessingState:
+    """Tracks the state of email processing for delta updates."""
+    processed_ids: Set[str] = dataclasses.field(default_factory=set)
+    last_processed_date: Optional[datetime] = None
+    schema_version: str = SCHEMA_VERSION
+    deleted_ids: Set[str] = dataclasses.field(default_factory=set)
 
 class EmailProcessor(BaseProcessor):
     """
@@ -70,7 +81,180 @@ class EmailProcessor(BaseProcessor):
         self.emails_folder = config["onedrive"]["emails_folder"]
         self.attachments_folder = config["onedrive"]["attachments_folder"]
         self.processed_emails_folder = config["onedrive"]["processed_emails_folder"]
+        self.state_file = f"{self.processed_emails_folder}/processing_state.json"
+        self.processing_state = ProcessingState()
         logger.info(f"EmailProcessor initialized with folders: emails={self.emails_folder}, attachments={self.attachments_folder}")
+
+    async def load_processing_state(self) -> None:
+        """Load the processing state from OneDrive."""
+        try:
+            if await self.file_exists(self.state_file):
+                state_content = await self.graph_client.download_file(
+                    config["user"]["email"],
+                    self.state_file
+                )
+                state_data = json.loads(state_content)
+                self.processing_state = ProcessingState(
+                    processed_ids=set(state_data.get('processed_ids', [])),
+                    last_processed_date=datetime.fromisoformat(state_data.get('last_processed_date')) if state_data.get('last_processed_date') else None,
+                    schema_version=state_data.get('schema_version', SCHEMA_VERSION),
+                    deleted_ids=set(state_data.get('deleted_ids', []))
+                )
+                logger.info(f"Loaded processing state: {len(self.processing_state.processed_ids)} processed, schema version {self.processing_state.schema_version}")
+        except Exception as e:
+            logger.warning(f"Could not load processing state, starting fresh: {str(e)}")
+
+    async def save_processing_state(self) -> None:
+        """Save the current processing state to OneDrive."""
+        try:
+            state_data = {
+                'processed_ids': list(self.processing_state.processed_ids),
+                'last_processed_date': self.processing_state.last_processed_date.isoformat() if self.processing_state.last_processed_date else None,
+                'schema_version': self.processing_state.schema_version,
+                'deleted_ids': list(self.processing_state.deleted_ids)
+            }
+            await self._upload_to_onedrive(
+                os.path.basename(self.state_file),
+                json.dumps(state_data, indent=2).encode('utf-8'),
+                os.path.dirname(self.state_file)
+            )
+            logger.info("Saved processing state")
+        except Exception as e:
+            logger.error(f"Failed to save processing state: {str(e)}")
+
+    async def process_delta(self, since: Optional[datetime] = None) -> Dict[str, Any]:
+        """Process new or modified emails since the last run.
+        
+        Args:
+            since: Optional datetime to process emails from
+            
+        Returns:
+            Processing statistics
+        """
+        await self.load_processing_state()
+        
+        # Use provided date or last processed date
+        start_date = since or self.processing_state.last_processed_date or (datetime.now() - timedelta(days=1))
+        
+        stats = {
+            'processed': 0,
+            'updated': 0,
+            'deleted': 0,
+            'errors': 0
+        }
+
+        try:
+            # Get list of current email files
+            current_files = await self.graph_client.list_files(
+                config["user"]["email"],
+                self.processed_emails_folder
+            )
+            current_ids = {self._extract_id_from_filename(f) for f in current_files if f.endswith('.json')}
+            
+            # Detect deletions
+            deleted_ids = self.processing_state.processed_ids - current_ids
+            self.processing_state.deleted_ids.update(deleted_ids)
+            stats['deleted'] = len(deleted_ids)
+            
+            # Process each file
+            for file_name in current_files:
+                if not file_name.endswith('.json'):
+                    continue
+                    
+                try:
+                    file_path = f"{self.processed_emails_folder}/{file_name}"
+                    content = await self.graph_client.download_file(
+                        config["user"]["email"],
+                        file_path
+                    )
+                    metadata = json.loads(content)
+                    
+                    # Check if needs reprocessing due to schema change
+                    if self._needs_reprocessing(metadata):
+                        await self._reprocess_email(metadata)
+                        stats['updated'] += 1
+                    
+                    self.processing_state.processed_ids.add(metadata['document_id'])
+                    stats['processed'] += 1
+                    
+                except Exception as e:
+                    logger.error(f"Error processing {file_name}: {str(e)}")
+                    stats['errors'] += 1
+            
+            # Update state
+            self.processing_state.last_processed_date = datetime.now()
+            await self.save_processing_state()
+            
+            return stats
+            
+        except Exception as e:
+            logger.error(f"Error in process_delta: {str(e)}")
+            raise ProcessingError(f"Delta processing failed: {str(e)}")
+
+    def _needs_reprocessing(self, metadata: Dict[str, Any]) -> bool:
+        """Check if an email needs reprocessing due to schema changes.
+        
+        Args:
+            metadata: Email metadata
+            
+        Returns:
+            True if reprocessing is needed
+        """
+        # Check schema version
+        if 'schema_version' not in metadata or metadata['schema_version'] != SCHEMA_VERSION:
+            return True
+            
+        # Check for required fields in current schema
+        required_fields = {
+            'document_id', 'type', 'filename', 'one_drive_url', 'created_at',
+            'source', 'is_attachment', 'message_id', 'subject', 'from_',
+            'to', 'cc', 'date', 'text_content', 'attachments'
+        }
+        
+        return not all(field in metadata for field in required_fields)
+
+    async def _reprocess_email(self, old_metadata: Dict[str, Any]) -> None:
+        """Reprocess an email with schema updates.
+        
+        Args:
+            old_metadata: Previous email metadata
+        """
+        try:
+            # Add new required fields
+            updated_metadata = old_metadata.copy()
+            updated_metadata['schema_version'] = SCHEMA_VERSION
+            
+            # Add any new required fields with defaults
+            if 'text_content' not in updated_metadata:
+                updated_metadata['text_content'] = ""
+            if 'attachments' not in updated_metadata:
+                updated_metadata['attachments'] = []
+            
+            # Save updated metadata
+            file_path = f"{self.processed_emails_folder}/{updated_metadata['filename']}"
+            await self._save_processed_document(file_path, updated_metadata)
+            
+        except Exception as e:
+            logger.error(f"Failed to reprocess email {old_metadata.get('document_id')}: {str(e)}")
+            raise ProcessingError(f"Reprocessing failed: {str(e)}")
+
+    def _extract_id_from_filename(self, filename: str) -> Optional[str]:
+        """Extract document ID from filename.
+        
+        Args:
+            filename: Filename to parse
+            
+        Returns:
+            Document ID if found, None otherwise
+        """
+        try:
+            # Filename format: date_subject_id.json
+            parts = filename.rsplit('_', 1)
+            if len(parts) == 2:
+                return parts[1].replace('.json', '')
+        except Exception:
+            pass
+        return None
 
     async def process(self, eml: bytes, user_email: str = None) -> dict:
         """Process an email message from .eml bytes.
@@ -138,8 +322,7 @@ class EmailProcessor(BaseProcessor):
                 document_id=message_id,
                 type="email",
                 filename=None,  # To be set after naming
-                one_drive_url="",  # Will be updated after upload
-                outlook_url=graph_metadata.get("webUrl", default_outlook_url),
+                source_url=graph_metadata.get("webUrl", default_outlook_url),
                 created_at=datetime.now().isoformat(),
                 size=len(eml_content),
                 content_type="message/rfc822",
@@ -148,13 +331,14 @@ class EmailProcessor(BaseProcessor):
                 parent_email_id=None,
                 message_id=message_id,
                 subject=subject,
-                from_=from_email,  # This is crucial - keep the underscore in from_
-                to=to_emails,
-                cc=cc_emails,
+                from_=from_email,
+                recipients=to_emails + cc_emails,  # Combine both lists
                 date=date,
-                text_content=text_content,
+                title="",  # Blank for emails
+                author="",  # Blank for emails
                 attachments=[],  # Will store attachment IDs
-                tags=[]
+                tags=[],         # Fill as needed
+                text_content=text_content
             )
             
             # Generate a safe filename
@@ -166,14 +350,14 @@ class EmailProcessor(BaseProcessor):
             # Save email metadata and get OneDrive webUrl
             try:
                 # First, try to verify the OneDrive URL isn't empty
-                if not email_metadata.one_drive_url or email_metadata.one_drive_url == "":
+                if not email_metadata.source_url or email_metadata.source_url == "":
                     # Generate a proper SharePoint URL for the file in OneDrive
                     sharepoint_domain = "tassehcapital-my.sharepoint.com"  # Get from config if available
                     user_email_domain = user_email.split('@')[1]
                     user_name = user_email.split('@')[0]
                     folder_path = self.processed_emails_folder
                     onedrive_url = f"https://{sharepoint_domain}/personal/{user_name}_{user_email_domain}/Documents/{folder_path}/{new_filename}"
-                    email_metadata.one_drive_url = onedrive_url
+                    email_metadata.source_url = onedrive_url
                 
                 json_content = email_metadata.to_json()
                 
@@ -202,12 +386,12 @@ class EmailProcessor(BaseProcessor):
                 
                 # Set the OneDrive URL in metadata - ensure it's never blank
                 if upload_response and 'https://' in upload_response:
-                    email_metadata.one_drive_url = upload_response
+                    email_metadata.source_url = upload_response
                 else:
-                    email_metadata.one_drive_url = onedrive_url
+                    email_metadata.source_url = onedrive_url
                 
                 # Add debugging to verify the URL is set
-                logger.debug(f"OneDrive URL for email: {email_metadata.one_drive_url}")
+                logger.debug(f"OneDrive URL for email: {email_metadata.source_url}")
                 
             except Exception as e:
                 logger.error(f"Error uploading email metadata: {str(e)}")

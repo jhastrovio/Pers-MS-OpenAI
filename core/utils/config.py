@@ -60,19 +60,18 @@ config = {
     # OpenAI configuration
     "openai": {
         "api_key": get_env_variable('OPENAI_API_KEY'),
-        "vector_store_id": get_env_variable('OPENAI_VECTOR_STORE_ID')
+        "vector_store_id": get_env_variable('OPENAI_VECTOR_STORE_ID'),
+        "vector_store_name":get_env_variable('OPENAI_VECTOR_STORE_NAME')
     },
     
     # OneDrive configuration
     "onedrive": {
+        "file_list": "data_PMSA/processing_list.json",
         "emails_folder": "data_PMSA/emails_1",
         "documents_folder": "data_PMSA/documents_1",
         "attachments_folder": "data_PMSA/attachments_1",
         "processed_emails_folder": "data_PMSA/processed_emails_2",
         "processed_documents_folder": "data_PMSA/processed_documents_2",
-        "processed_chunk_dir": "data_PMSA/processed_chunks",
-        "embeddings_dir": "embeddings",
-        "logs_dir": "logs"
     },
     
     # Processing configuration

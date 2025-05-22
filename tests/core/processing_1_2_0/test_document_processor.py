@@ -69,7 +69,7 @@ async def test_process_document_with_file_path(document_processor, tmp_path):
     assert isinstance(metadata, EmailDocumentMetadata)
     assert metadata.type == "document"
     assert metadata.text_content == "Test content"
-    assert metadata.one_drive_url == "https://example.com/test.json"
+    assert metadata.source_url == "https://example.com/test.json"
 
 @pytest.mark.asyncio
 async def test_process_document_with_raw_content(document_processor):
@@ -96,7 +96,7 @@ async def test_process_document_with_raw_content(document_processor):
     assert isinstance(metadata, EmailDocumentMetadata)
     assert metadata.type == "document"
     assert metadata.text_content == "Test content"
-    assert metadata.one_drive_url == "https://example.com/test.json"
+    assert metadata.source_url == "https://example.com/test.json"
 
 @pytest.mark.asyncio
 async def test_process_invalid_file(document_processor):

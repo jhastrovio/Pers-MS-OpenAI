@@ -50,7 +50,7 @@ async def test_attachment_processing_e2e():
         document_id=str(uuid.uuid4()),
         type="email",
         filename="sample_email.eml",
-        one_drive_url="",
+        source_url="",
         created_at=datetime.now().isoformat(),
         size=1024,
         content_type="message/rfc822",

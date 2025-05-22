@@ -175,27 +175,29 @@ class DocumentProcessor(BaseProcessor):
             else:
                 logger.warning(f"No OneDrive path provided for {original_filename}, URL will be blank")
             
+            # Determine type from file extension (without dot)
+            file_ext = os.path.splitext(original_filename)[1].lower().lstrip('.')
+            # Set date from last_modified if available
+            doc_date = additional_metadata.get('last_modified', None)
             # Create document metadata using EmailDocumentMetadata
             document_metadata = EmailDocumentMetadata(
                 document_id=document_id,
-                type="document",
-                filename=original_filename,  # Use original filename without temp_ prefix
-                one_drive_url=original_doc_url,  # Set to original document's URL
-                created_at=datetime.now().isoformat(),
-                size=file_size,
-                content_type=content_type,
-                source="onedrive",
-                is_attachment=False,  # default
-                text_content=text_content,
+                type=file_ext or "document",
+                filename=original_filename,
+                source_url=original_doc_url,
+                is_attachment=False,
+                parent_email_id=None,
+                message_id=None,
+                subject=None,
+                from_=None,
+                recipients=[],
+                date=doc_date,
+                title=additional_metadata.get('title', os.path.splitext(original_filename)[0]),
+                author=additional_metadata.get('author', ''),
+                attachments=[],
                 tags=[],
-                title=additional_metadata.get('title', os.path.splitext(original_filename)[0]),  # Use original filename for title fallback
-                **(meta_overrides or {}),  # Apply any metadata overrides
+                text_content=text_content
             )
-            
-            # Add additional metadata
-            for key, value in additional_metadata.items():
-                if key != 'title':  # Skip title as we've already handled it
-                    setattr(document_metadata, key, value)
             
             # Save metadata to OneDrive
             try:
