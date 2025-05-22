@@ -21,6 +21,7 @@ from core.graph_1_1_0.metadata import EmailDocumentMetadata
 from core.graph_1_1_0.main import GraphClient, DateTimeEncoder
 from core.utils.config import PROCESSING_CONFIG
 from core.utils.logging import get_logger
+from core.utils.onedrive_utils import load_json_file, save_json_file
 
 logger = get_logger(__name__)
 
@@ -38,6 +39,9 @@ class DocumentProcessor(BaseProcessor):
         # Initialize paths from config
         self.processed_folder = self.config["FOLDERS"]["PROCESSED_DOCUMENTS"]
         self.documents_folder = self.config["FOLDERS"]["DOCUMENTS"]
+        # State file path from config
+        self.state_file = self.config["FOLDERS"].get("FILE_LIST", config["onedrive"]["file_list"])
+        self.processing_state = None
     
     async def process(self, file_path_or_data: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
         """Process a document file or raw content.
@@ -369,4 +373,24 @@ class DocumentProcessor(BaseProcessor):
             
         except Exception as e:
             logger.error(f"Error getting web URL for {file_path}: {str(e)}")
-            return "" 
+            return ""
+
+    async def load_processing_state(self) -> None:
+        """Load the processing state from OneDrive."""
+        try:
+            state_path = config["onedrive"]["file_list"]
+            state_data = await load_json_file(state_path)
+            # You may want to define a ProcessingState dataclass for documents, similar to emails
+            self.processing_state = state_data
+        except Exception as e:
+            logger.warning(f"Could not load document processing state, starting fresh: {str(e)}")
+            self.processing_state = None
+
+    async def save_processing_state(self) -> None:
+        """Save the current processing state to OneDrive."""
+        try:
+            state_path = config["onedrive"]["file_list"]
+            await save_json_file(state_path, self.processing_state)
+            logger.info("Saved document processing state")
+        except Exception as e:
+            logger.error(f"Failed to save document processing state: {str(e)}") 

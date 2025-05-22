@@ -11,6 +11,7 @@ from core.utils.logging import get_logger
 from core.utils.config import PROCESSING_CONFIG
 import os
 import json
+from core.utils.onedrive_utils import load_json_file, save_json_file
 
 logger = get_logger(__name__)
 
@@ -29,7 +30,28 @@ class AttachmentProcessor(BaseProcessor):
         """
         self.doc_processor = doc_processor
         self.attachments_folder = PROCESSING_CONFIG["FOLDERS"]["ATTACHMENTS"]
+        self.state_file = PROCESSING_CONFIG["FOLDERS"].get("FILE_LIST", config["onedrive"]["file_list"])
+        self.processing_state = None
         logger.info("AttachmentProcessor initialized with DocumentProcessor")
+    
+    async def load_processing_state(self) -> None:
+        """Load the processing state from OneDrive."""
+        try:
+            state_path = config["onedrive"]["file_list"]
+            state_data = await load_json_file(state_path)
+            self.processing_state = state_data
+        except Exception as e:
+            logger.warning(f"Could not load attachment processing state, starting fresh: {str(e)}")
+            self.processing_state = None
+
+    async def save_processing_state(self) -> None:
+        """Save the current processing state to OneDrive."""
+        try:
+            state_path = config["onedrive"]["file_list"]
+            await save_json_file(state_path, self.processing_state)
+            logger.info("Saved attachment processing state")
+        except Exception as e:
+            logger.error(f"Failed to save attachment processing state: {str(e)}")
     
     async def process(
         self,

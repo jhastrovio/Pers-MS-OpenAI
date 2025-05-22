@@ -30,6 +30,7 @@ from bs4 import BeautifulSoup
 import json
 import asyncio
 from core.utils.filename_utils import create_hybrid_filename
+from core.utils.onedrive_utils import load_json_file, save_json_file
 
 logger = get_logger(__name__)
 
@@ -88,36 +89,29 @@ class EmailProcessor(BaseProcessor):
     async def load_processing_state(self) -> None:
         """Load the processing state from OneDrive."""
         try:
-            if await self.file_exists(self.state_file):
-                state_content = await self.graph_client.download_file(
-                    config["user"]["email"],
-                    self.state_file
-                )
-                state_data = json.loads(state_content)
-                self.processing_state = ProcessingState(
-                    processed_ids=set(state_data.get('processed_ids', [])),
-                    last_processed_date=datetime.fromisoformat(state_data.get('last_processed_date')) if state_data.get('last_processed_date') else None,
-                    schema_version=state_data.get('schema_version', SCHEMA_VERSION),
-                    deleted_ids=set(state_data.get('deleted_ids', []))
-                )
-                logger.info(f"Loaded processing state: {len(self.processing_state.processed_ids)} processed, schema version {self.processing_state.schema_version}")
+            state_path = config["onedrive"]["file_list"]
+            state_data = await load_json_file(state_path)
+            self.processing_state = ProcessingState(
+                processed_ids=set(state_data.get('processed_ids', [])),
+                last_processed_date=datetime.fromisoformat(state_data.get('last_processed_date')) if state_data.get('last_processed_date') else None,
+                schema_version=state_data.get('schema_version', SCHEMA_VERSION),
+                deleted_ids=set(state_data.get('deleted_ids', []))
+            )
+            logger.info(f"Loaded processing state: {len(self.processing_state.processed_ids)} processed, schema version {self.processing_state.schema_version}")
         except Exception as e:
             logger.warning(f"Could not load processing state, starting fresh: {str(e)}")
 
     async def save_processing_state(self) -> None:
         """Save the current processing state to OneDrive."""
         try:
+            state_path = config["onedrive"]["file_list"]
             state_data = {
                 'processed_ids': list(self.processing_state.processed_ids),
                 'last_processed_date': self.processing_state.last_processed_date.isoformat() if self.processing_state.last_processed_date else None,
                 'schema_version': self.processing_state.schema_version,
                 'deleted_ids': list(self.processing_state.deleted_ids)
             }
-            await self._upload_to_onedrive(
-                os.path.basename(self.state_file),
-                json.dumps(state_data, indent=2).encode('utf-8'),
-                os.path.dirname(self.state_file)
-            )
+            await save_json_file(state_path, state_data)
             logger.info("Saved processing state")
         except Exception as e:
             logger.error(f"Failed to save processing state: {str(e)}")
