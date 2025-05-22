@@ -5,7 +5,7 @@ Test utility for clearing OneDrive data folders.
 import asyncio
 import sys
 from core.utils.onedrive_utils import clear_folder
-from core.utils.config import config
+from core.utils.config import app_config
 from typing import List, Optional
 
 async def clear_data_folders(folders: Optional[List[str]] = None):
@@ -17,12 +17,12 @@ async def clear_data_folders(folders: Optional[List[str]] = None):
     """
     # Define all data folders
     data_folders = {
-        "emails": config["onedrive"]["emails_folder"],
-        "documents": config["onedrive"]["documents_folder"],
-        "processed_emails": config["onedrive"]["processed_emails_folder"],
-        "processed_documents": config["onedrive"]["processed_documents_folder"],
-        "processed_chunks": config["onedrive"]["processed_chunk_dir"],
-        "embeddings": config["onedrive"]["embeddings_dir"]
+        "emails": app_config.onedrive.emails_folder,
+        "documents": app_config.onedrive.documents_folder,
+        "processed_emails": app_config.onedrive.processed_emails_folder,
+        "processed_documents": app_config.onedrive.processed_documents_folder,
+        "processed_chunks": app_config.onedrive.processed_chunk_dir,
+        "embeddings": app_config.onedrive.embeddings_dir,
     }
     
     # If specific folders are requested, filter the data_folders

@@ -5,7 +5,7 @@ Test script for email fetching functionality from Microsoft Graph API.
 import asyncio
 import os
 from core.graph_1_1_0.main import GraphClient
-from core.utils.config import get_env_variable, config
+from core.utils.config import app_config, get_env_variable
 from core.utils.logging import get_logger
 
 logger = get_logger(__name__)

@@ -19,7 +19,7 @@ from core.processing_1_2_0.engine.text_extractor import TextExtractor
 from core.graph_1_1_0.metadata_extractor import MetadataExtractor
 from core.graph_1_1_0.metadata import EmailDocumentMetadata
 from core.graph_1_1_0.main import GraphClient, DateTimeEncoder
-from core.utils.config import PROCESSING_CONFIG
+from core.utils.config import app_config, PROCESSING_CONFIG
 from core.utils.logging import get_logger
 from core.utils.onedrive_utils import load_json_file, save_json_file
 
@@ -40,7 +40,7 @@ class DocumentProcessor(BaseProcessor):
         self.processed_folder = self.config["FOLDERS"]["PROCESSED_DOCUMENTS"]
         self.documents_folder = self.config["FOLDERS"]["DOCUMENTS"]
         # State file path from config
-        self.state_file = self.config["FOLDERS"].get("FILE_LIST", config["onedrive"]["file_list"])
+        self.state_file = self.config["FOLDERS"].get("FILE_LIST", app_config.onedrive.file_list)
         self.processing_state = None
     
     async def process(self, file_path_or_data: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
@@ -378,7 +378,7 @@ class DocumentProcessor(BaseProcessor):
     async def load_processing_state(self) -> None:
         """Load the processing state from OneDrive."""
         try:
-            state_path = config["onedrive"]["file_list"]
+            state_path = app_config.onedrive.file_list
             state_data = await load_json_file(state_path)
             # You may want to define a ProcessingState dataclass for documents, similar to emails
             self.processing_state = state_data
@@ -389,7 +389,7 @@ class DocumentProcessor(BaseProcessor):
     async def save_processing_state(self) -> None:
         """Save the current processing state to OneDrive."""
         try:
-            state_path = config["onedrive"]["file_list"]
+            state_path = app_config.onedrive.file_list
             await save_json_file(state_path, self.processing_state)
             logger.info("Saved document processing state")
         except Exception as e:

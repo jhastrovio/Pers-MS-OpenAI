@@ -14,7 +14,7 @@ import uuid
 from core.processing_1_2_0.processors.document_processor import DocumentProcessor
 from core.processing_1_2_0.processors.attachment_processor import AttachmentProcessor
 from core.graph_1_1_0.metadata import EmailDocumentMetadata
-from core.utils.config import config, PROCESSING_CONFIG
+from core.utils.config import app_config, PROCESSING_CONFIG
 from core.utils.ms_graph_client import GraphClient
 
 LOG_PATH = "itest_attachment_processing.log"
@@ -62,7 +62,7 @@ async def test_attachment_processing_e2e():
         subject="Test Email with Attachments"
     )
 
-    user_email = config["user"]["email"]
+    user_email = app_config.user.email
     docs_folder = PROCESSING_CONFIG["FOLDERS"]["DOCUMENTS"]
     processed_folder = PROCESSING_CONFIG["FOLDERS"]["PROCESSED_DOCUMENTS"]
     allowed_exts = PROCESSING_CONFIG["ALLOWED_EXTENSIONS"]

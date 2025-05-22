@@ -6,13 +6,13 @@ from datetime import datetime
 
 from openai import OpenAI
 from core.storage_1_3_0.vector_repository import VectorRepository
-from core.utils.config import config
+from core.utils.config import app_config
 
 @pytest.mark.asyncio
 async def test_vector_repository_upload():
     """Test uploading a single document to the vector store."""
     # Create a test vector store first
-    client = OpenAI(api_key=config["openai"]["api_key"])
+    client = OpenAI(api_key=app_config.openai.api_key)
     vector_store = client.vector_stores.create(
         name="test-vector-store"
     )

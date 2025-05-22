@@ -3,7 +3,7 @@ import pytest
 import asyncio
 import tempfile
 from core.processing_1_2_0.processors.document_processor import DocumentProcessor
-from core.utils.config import config, PROCESSING_CONFIG
+from core.utils.config import app_config, PROCESSING_CONFIG
 from core.utils.ms_graph_client import GraphClient
 
 LOG_PATH = "itest_document_processing.log"
@@ -31,7 +31,7 @@ async def test_document_processing_e2e():
         pytest.skip(f"Missing required environment variables: {', '.join(missing_vars)}")
 
     processor = DocumentProcessor(PROCESSING_CONFIG)
-    user_email = config["user"]["email"]
+    user_email = app_config.user.email
     docs_folder = PROCESSING_CONFIG["FOLDERS"]["DOCUMENTS"]
     processed_folder = PROCESSING_CONFIG["FOLDERS"]["PROCESSED_DOCUMENTS"]
     allowed_exts = PROCESSING_CONFIG["ALLOWED_EXTENSIONS"]

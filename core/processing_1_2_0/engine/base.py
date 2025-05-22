@@ -9,7 +9,7 @@ import uuid
 import os
 import logging
 from time import time
-from core.utils.config import config
+from core.utils.config import app_config
 
 logger = logging.getLogger(__name__)
 
@@ -31,10 +31,10 @@ class BaseProcessor(ABC):
             processing_config: Processing configuration
         """
         self.config = processing_config
-        self.max_file_size = processing_config.get('MAX_FILE_SIZE', config['processing']['MAX_FILE_SIZE'])
-        self.max_attachment_size = processing_config.get('MAX_ATTACHMENT_SIZE', config['processing']['MAX_ATTACHMENT_SIZE'])
-        self.allowed_extensions = processing_config.get('ALLOWED_EXTENSIONS', config['processing']['ALLOWED_EXTENSIONS'])
-        self.content_types = processing_config.get('CONTENT_TYPES', config['processing']['CONTENT_TYPES'])
+        self.max_file_size = processing_config.get('MAX_FILE_SIZE', app_config.processing.MAX_FILE_SIZE)
+        self.max_attachment_size = processing_config.get('MAX_ATTACHMENT_SIZE', app_config.processing.MAX_ATTACHMENT_SIZE)
+        self.allowed_extensions = processing_config.get('ALLOWED_EXTENSIONS', app_config.processing.ALLOWED_EXTENSIONS)
+        self.content_types = processing_config.get('CONTENT_TYPES', app_config.processing.CONTENT_TYPES)
         self.metadata = {}
         self._validate_config()
         logger.info(f"{self.__class__.__name__} initialized with config: {self.config}")

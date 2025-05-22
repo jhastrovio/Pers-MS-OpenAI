@@ -22,7 +22,7 @@ from core.processing_1_2_0.engine.base import BaseProcessor, ProcessingError, Va
 from core.processing_1_2_0.engine.text_extractor import TextExtractor
 from core.graph_1_1_0.metadata_extractor import MetadataExtractor
 from core.graph_1_1_0.metadata import EmailDocumentMetadata
-from core.utils.config import config, PROCESSING_CONFIG, CONTENT_TYPES
+from core.utils.config import app_config, PROCESSING_CONFIG, CONTENT_TYPES
 from core.graph_1_1_0.main import GraphClient
 from core.utils.logging import get_logger
 import dataclasses
@@ -79,9 +79,9 @@ class EmailProcessor(BaseProcessor):
         self.metadata_extractor = MetadataExtractor()
         self.text_extractor = TextExtractor()
         self.graph_client = GraphClient()
-        self.emails_folder = config["onedrive"]["emails_folder"]
-        self.attachments_folder = config["onedrive"]["attachments_folder"]
-        self.processed_emails_folder = config["onedrive"]["processed_emails_folder"]
+        self.emails_folder = app_config.onedrive.emails_folder
+        self.attachments_folder = app_config.onedrive.attachments_folder
+        self.processed_emails_folder = app_config.onedrive.processed_emails_folder
         self.state_file = f"{self.processed_emails_folder}/processing_state.json"
         self.processing_state = ProcessingState()
         logger.info(f"EmailProcessor initialized with folders: emails={self.emails_folder}, attachments={self.attachments_folder}")
@@ -89,7 +89,7 @@ class EmailProcessor(BaseProcessor):
     async def load_processing_state(self) -> None:
         """Load the processing state from OneDrive."""
         try:
-            state_path = config["onedrive"]["file_list"]
+            state_path = app_config.onedrive.file_list
             state_data = await load_json_file(state_path)
             self.processing_state = ProcessingState(
                 processed_ids=set(state_data.get('processed_ids', [])),
@@ -104,7 +104,7 @@ class EmailProcessor(BaseProcessor):
     async def save_processing_state(self) -> None:
         """Save the current processing state to OneDrive."""
         try:
-            state_path = config["onedrive"]["file_list"]
+            state_path = app_config.onedrive.file_list
             state_data = {
                 'processed_ids': list(self.processing_state.processed_ids),
                 'last_processed_date': self.processing_state.last_processed_date.isoformat() if self.processing_state.last_processed_date else None,
@@ -140,7 +140,7 @@ class EmailProcessor(BaseProcessor):
         try:
             # Get list of current email files
             current_files = await self.graph_client.list_files(
-                config["user"]["email"],
+                app_config.user.email,
                 self.processed_emails_folder
             )
             current_ids = {self._extract_id_from_filename(f) for f in current_files if f.endswith('.json')}
@@ -158,7 +158,7 @@ class EmailProcessor(BaseProcessor):
                 try:
                     file_path = f"{self.processed_emails_folder}/{file_name}"
                     content = await self.graph_client.download_file(
-                        config["user"]["email"],
+                        app_config.user.email,
                         file_path
                     )
                     metadata = json.loads(content)
@@ -307,7 +307,7 @@ class EmailProcessor(BaseProcessor):
             default_outlook_url = ""
             if message_id:
                 # Create a standard Outlook web URL format
-                user_email = self.config["user"]["email"] if "user" in self.config else config["user"]["email"]
+                user_email = self.app_config.user.email if "user" in self.config else app_config.user.email
                 tenant = user_email.split('@')[1]
                 default_outlook_url = f"https://outlook.office.com/mail/inbox/id/{message_id}"
             
@@ -357,7 +357,7 @@ class EmailProcessor(BaseProcessor):
                 
                 # Use proper upload_file method instead of non-existent save_email_content_to_onedrive
                 file_path = f"{self.processed_emails_folder}/{new_filename}"
-                user_email = config["user"]["email"]
+                user_email = app_config.user.email
                 try:
                     upload_response = await self.graph_client.upload_file(
                         user_email,
@@ -686,7 +686,7 @@ class EmailProcessor(BaseProcessor):
                 file_path = filename
                 
             # Upload the file
-            user_email = config["user"]["email"]
+            user_email = app_config.user.email
             return await self.graph_client.upload_file(
                 user_email,
                 file_path,
@@ -869,7 +869,7 @@ class EmailProcessor(BaseProcessor):
             bool: True if the file exists, False otherwise
         """
         try:
-            user_email = config["user"]["email"]
+            user_email = app_config.user.email
             access_token = await self.graph_client._get_access_token()
             headers = {"Authorization": f"Bearer {access_token}"}
             

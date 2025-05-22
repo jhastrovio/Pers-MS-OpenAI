@@ -10,7 +10,7 @@ This module handles all interactions with Microsoft Graph API, including:
 from typing import List, Dict, Any
 import os
 from msal import PublicClientApplication, ConfidentialClientApplication
-from core.utils.config import get_env_variable, config
+from core.utils.config import app_config, get_env_variable
 from core.utils.logging import get_logger
 from core.graph_1_1_0.metadata import EmailDocumentMetadata
 from core.graph_1_1_0.metadata_extractor import MetadataExtractor
@@ -49,10 +49,10 @@ class GraphClient:
     async def _refresh_token(self):
         """Refresh the access token using client credentials."""
         try:
-            token_url = f"https://login.microsoftonline.com/{config['azure']['tenant_id']}/oauth2/v2.0/token"
+            token_url = f"https://login.microsoftonline.com/{app_config.azure.tenant_id}/oauth2/v2.0/token"
             data = {
-                'client_id': config['azure']['client_id'],
-                'client_secret': config['azure']['client_secret'],
+                'client_id': app_config.azure.client_id,
+                'client_secret': app_config.azure.client_secret,
                 'scope': 'https://graph.microsoft.com/.default',
                 'grant_type': 'client_credentials'
             }
@@ -158,7 +158,7 @@ class GraphClient:
             # Create hybrid filename for .eml
             subject = raw_metadata.get("subject", "No_Subject")
             eml_filename = create_hybrid_filename(message_id, subject, ".eml")
-            eml_path = os.path.join(config["onedrive"]["emails_folder"], eml_filename)
+            eml_path = os.path.join(app_config.onedrive.emails_folder, eml_filename)
             eml_url = await self.upload_file(user_email, eml_path, eml_content)
             
             # Create structured metadata for the email
@@ -212,7 +212,7 @@ class GraphClient:
                         att_name,
                         att_ext
                     )
-                    att_path = os.path.join(config["onedrive"]["attachments_folder"], att_filename)
+                    att_path = os.path.join(app_config.onedrive.attachments_folder, att_filename)
                     att_url = await self.upload_file(user_email, att_path, att_content)
                     
                     # Extract metadata for the attachment
@@ -243,7 +243,7 @@ class GraphClient:
                     # Save companion JSON file with metadata
                     base_name, ext = os.path.splitext(att_filename)
                     json_filename = f"{base_name}{ext}.json"
-                    json_path = os.path.join(config["onedrive"]["attachments_folder"], json_filename)
+                    json_path = os.path.join(app_config.onedrive.attachments_folder, json_filename)
                     json_content = json.dumps(attachment_metadata.to_dict(), indent=2, cls=DateTimeEncoder)
                     json_url = await self.upload_file(user_email, json_path, json_content.encode('utf-8'))
                     
@@ -377,7 +377,7 @@ class GraphClient:
             bool: True if the file exists, False otherwise
         """
         try:
-            user_email = config["user"]["email"]
+            user_email = app_config.user.email
             access_token = await self._get_access_token()
             headers = {"Authorization": f"Bearer {access_token}"}
             

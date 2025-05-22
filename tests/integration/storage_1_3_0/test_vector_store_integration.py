@@ -2,7 +2,7 @@ import pytest
 import asyncio
 import logging
 from core.storage_1_3_0.vector_repository import VectorRepository
-from core.utils.config import config
+from core.utils.config import app_config
 from core.utils.onedrive_utils import list_folder_contents
 
 logging.basicConfig(level=logging.INFO)
@@ -20,7 +20,7 @@ async def test_vector_store_integration():
     3. Handle duplicates appropriately
     """
     # Get the processed documents directory from config
-    processed_docs_folder = config["onedrive"]["processed_documents_folder"]
+    processed_docs_folder = app_config.onedrive.processed_documents_folder
     
     # List files in the OneDrive folder
     files = await list_folder_contents(processed_docs_folder)

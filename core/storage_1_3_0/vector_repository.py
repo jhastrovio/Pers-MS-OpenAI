@@ -8,7 +8,7 @@ import orjson
 from openai import OpenAI
 from openai.types.file_object import FileObject
 
-from core.utils.config import config
+from core.utils.config import app_config
 from core.utils.onedrive_utils import list_folder_contents
 from core.utils.ms_graph_client import GraphClient
 
@@ -25,9 +25,9 @@ class VectorRepository:
     ):
         """Initialize the vector store repository."""
         self.client = OpenAI(
-            api_key=api_key or config["openai"]["api_key"]
+            api_key=api_key or app_config.openai.api_key
         )
-        self.store_id = config["openai"]["vector_store_id"]
+        self.store_id = app_config.openai.vector_store_id
         self.max_retries = max_retries
         self.graph_client = GraphClient()
         logger.info(f"Initialized vector store repository with store ID: {self.store_id}")
@@ -85,7 +85,7 @@ class VectorRepository:
     async def upload_document(self, file_info: Dict[str, Any]) -> bool:
         """Upload a single document and its metadata to the vector store."""
         try:
-            user_email = config["user"]["email"]
+            user_email = app_config.user.email
             folder_path = file_info["parentReference"]["path"].split("root:")[-1].strip("/")
             file_name = file_info["name"]
             
@@ -178,7 +178,7 @@ async def main():
     logging.basicConfig(level=logging.INFO)
     
     repo = VectorRepository()
-    directory = config["onedrive"]["processed_emails_folder"]
+    directory = app_config.onedrive.processed_emails_folder
     
     stats = await repo.batch_upload(directory)
     logger.info(f"Final stats: {stats}")

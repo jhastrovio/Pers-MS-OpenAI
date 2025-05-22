@@ -10,7 +10,7 @@ This module handles all interactions with Microsoft Graph API, including:
 from typing import List, Dict, Any
 import os
 from msal import PublicClientApplication, ConfidentialClientApplication
-from core.utils.config import get_env_variable, config
+from core.utils.config import app_config, get_env_variable
 from core.utils.logging import get_logger
 import httpx
 import json
@@ -151,7 +151,7 @@ class GraphClient:
 
         # Use the folder from config if not provided
         if folder is None:
-            folder = config["onedrive"]["emails_folder"]
+            folder = app_config.onedrive.emails_folder
 
         try:
             user_email = get_env_variable('user_email')
@@ -180,7 +180,7 @@ class GraphClient:
             "Content-Type": "text/plain"
         }
         if folder is None:
-            folder = config["onedrive"]["emails_folder"]
+            folder = app_config.onedrive.emails_folder
         user_email = get_env_variable('user_email')
         # Use cloud-based path format
         upload_url = f'https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/{folder}/{file_name}:/content'

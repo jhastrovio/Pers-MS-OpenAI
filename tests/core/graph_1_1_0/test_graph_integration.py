@@ -9,7 +9,7 @@ import asyncio
 from core.graph_1_1_0.main import GraphClient
 import dotenv
 import re
-from core.utils.config import config
+from core.utils.config import app_config
 import httpx
 dotenv.load_dotenv()
 
@@ -130,7 +130,7 @@ async def test_fetch_and_save_multiple_emails():
         subject = email.get("subject", "no_subject")
         safe_subject = sanitize_filename(subject)
         file_name = f"email_{safe_subject}_{i+1}.eml"
-        folder = config["onedrive"]["emails_folder"]
+        folder = app_config.onedrive.emails_folder
         print(f"Uploading: {file_name} to folder: {folder}")
         headers = [
             f"Subject: {email.get('subject', '')}",
@@ -170,7 +170,7 @@ async def test_fetch_and_save_emails_with_attachments():
         subject = email.get("subject", "no_subject")
         safe_subject = sanitize_filename(subject)
         file_name = f"email_with_attachment_{safe_subject}_{i+1}.eml"
-        folder = config["onedrive"]["emails_folder"]
+        folder = app_config.onedrive.emails_folder
         print(f"Uploading: {file_name} to folder: {folder}")
         headers = [
             f"Subject: {email.get('subject', '')}",
@@ -189,11 +189,11 @@ async def test_fetch_and_save_emails_with_attachments():
 
 def test_environment_variables():
     """Test that all required environment variables are set."""
-    print("CLIENT_ID:", config["azure"]["client_id"])
-    print("CLIENT_SECRET:", "set" if config["azure"]["client_secret"] else "not set")
-    print("TENANT_ID:", config["azure"]["tenant_id"])
+    print("CLIENT_ID:", app_config.azure.client_id)
+    print("CLIENT_SECRET:", "set" if app_config.azure.client_secret else "not set")
+    print("TENANT_ID:", app_config.azure.tenant_id)
     
     # Check that all required variables are set
     required_vars = ["client_id", "client_secret", "tenant_id"]
-    if not all(config["azure"][k] for k in required_vars):
+    if not all(app_config.azure[k] for k in required_vars):
         pytest.skip("Required environment variables not set") 

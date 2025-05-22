@@ -12,7 +12,7 @@ import json
 from datetime import datetime
 from core.graph_1_1_0.main import GraphClient
 from core.processing_1_2_0.processors.email_processor import EmailProcessor
-from core.utils.config import config
+from core.utils.config import app_config
 from core.utils.onedrive_utils import list_folder_contents
 from core.utils.ms_graph_client import GraphClient as MsGraphClient
 
@@ -24,8 +24,8 @@ async def test_email_processor_integration():
     processor = EmailProcessor()
     processed_count = 0
     try:
-        user_email = config["user"]["email"]
-        emails_folder = config["onedrive"]["emails_folder"]
+        user_email = app_config.user.email
+        emails_folder = app_config.onedrive.emails_folder
         files = await list_folder_contents(emails_folder)
         eml_files = [f for f in files if f["name"].endswith(".eml")][:20]
         if not eml_files:

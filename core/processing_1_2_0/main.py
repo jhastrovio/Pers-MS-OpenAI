@@ -13,7 +13,7 @@ from core.processing_1_2_0.processors.document_processor import DocumentProcesso
 from core.processing_1_2_0.processors.attachment_processor import AttachmentProcessor
 from core.processing_1_2_0.processors.email_processor import EmailProcessor
 from core.processing_1_2_0.engine.base import ProcessingError
-from core.utils.config import PROCESSING_CONFIG
+from core.utils.config import app_config, PROCESSING_CONFIG
 
 logger = logging.getLogger(__name__)
 

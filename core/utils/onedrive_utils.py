@@ -1,7 +1,7 @@
 import os
 from typing import List
 from core.graph_1_1_0.main import GraphClient
-from core.utils.config import config
+from core.utils.config import app_config
 
 async def list_folder_contents(folder_path: str) -> List[dict]:
     """List all files in a OneDrive folder.
@@ -11,7 +11,7 @@ async def list_folder_contents(folder_path: str) -> List[dict]:
     """
     try:
         client = GraphClient()
-        user_email = config["user"]["email"]
+        user_email = app_config.user.email
         url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/{folder_path}:/children"
         access_token = await client._get_access_token()
         headers = {"Authorization": f"Bearer {access_token}"}
@@ -24,7 +24,7 @@ async def list_folder_contents(folder_path: str) -> List[dict]:
 
 async def delete_item(client: GraphClient, item_id: str) -> None:
     """Delete an item from OneDrive by its ID."""
-    user_email = config["user"]["email"]
+    user_email = app_config.user.email
     url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/items/{item_id}"
     access_token = await client._get_access_token()
     headers = {"Authorization": f"Bearer {access_token}"}
@@ -43,7 +43,7 @@ async def clear_folder(folder_path: str) -> None:
     """
     try:
         client = GraphClient()
-        user_email = config["user"]["email"]
+        user_email = app_config.user.email
         
         # Get access token
         access_token = await client._get_access_token()
@@ -75,7 +75,7 @@ async def load_json_file(file_path: str) -> dict:
     """
     try:
         client = GraphClient()
-        user_email = config["user"]["email"]
+        user_email = app_config.user.email
         access_token = await client._get_access_token()
         headers = {"Authorization": f"Bearer {access_token}"}
         # Normalize file path for OneDrive API
@@ -99,7 +99,7 @@ async def save_json_file(file_path: str, data: dict) -> None:
     import json
     try:
         client = GraphClient()
-        user_email = config["user"]["email"]
+        user_email = app_config.user.email
         # Convert dict to JSON bytes
         content_bytes = json.dumps(data, indent=2).encode('utf-8')
         # Normalize file path for OneDrive API
@@ -114,7 +114,7 @@ if __name__ == "__main__":
     
     async def main():
         # Example usage
-        folder = config["onedrive"]["processed_emails_folder"]  # or any other folder path
+        folder = app_config.onedrive.processed_emails_folder  # or any other folder path
         await clear_folder(folder)
     
     asyncio.run(main()) 

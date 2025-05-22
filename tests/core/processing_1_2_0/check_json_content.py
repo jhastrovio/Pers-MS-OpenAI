@@ -1,7 +1,7 @@
 import asyncio
 import json
 from core.graph_1_1_0.main import GraphClient
-from core.utils.config import config
+from core.utils.config import app_config
 import os
 
 async def check_json_content():
@@ -9,10 +9,10 @@ async def check_json_content():
     client = GraphClient()
     
     # Get user email from config
-    user_email = config["user"]["email"]
+    user_email = app_config.user.email
     
     # Get the first JSON file from the processed_emails_2 folder
-    folder = config["onedrive"]["processed_emails_folder"]
+    folder = app_config.onedrive.processed_emails_folder
     url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/{folder}:/children"
     access_token = await client._get_access_token()
     headers = {"Authorization": f"Bearer {access_token}"}

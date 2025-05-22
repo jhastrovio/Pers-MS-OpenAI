@@ -8,7 +8,7 @@ import pytest
 import json
 from core.graph_1_1_0.main import GraphClient
 from core.processing_1_2_0.processors.email_processor import EmailProcessor
-from core.utils.config import config
+from core.utils.config import app_config
 from core.utils.filename_utils import create_hybrid_filename
 from httpx import HTTPStatusError
 from datetime import datetime
@@ -32,10 +32,10 @@ async def test_email_processing_workflow():
     
     try:
         # Get a real message from OneDrive
-        user_email = config["user"]["email"]
+        user_email = app_config.user.email
         
         # List files in the emails_1 folder to find .eml files
-        emails_folder = config["onedrive"]["emails_folder"]  # data_PMSA/emails_1
+        emails_folder = app_config.onedrive.emails_folder  # data_PMSA/emails_1
         files = await list_folder_contents(emails_folder)
         
         # Find the first .eml file
@@ -88,7 +88,7 @@ async def test_email_processing_workflow():
         assert metadata["document_id"] in result["filename"]
         
         # Verify the processed file exists in OneDrive
-        processed_folder = config["onedrive"]["processed_emails_folder"]  # data_PMSA/processed_emails_2
+        processed_folder = app_config.onedrive.processed_emails_folder  # data_PMSA/processed_emails_2
         processed_path = f"{processed_folder}/{result['filename']}"
         file_exists = await client.file_exists(processed_path)
         assert file_exists, f"Processed file not found at {processed_path}"
@@ -106,10 +106,10 @@ async def test_email_with_metadata():
     
     try:
         # Get a real message from OneDrive
-        user_email = config["user"]["email"]
+        user_email = app_config.user.email
         
         # List files in the emails_1 folder to find .eml files
-        emails_folder = config["onedrive"]["emails_folder"]  # data_PMSA/emails_1
+        emails_folder = app_config.onedrive.emails_folder  # data_PMSA/emails_1
         files = await list_folder_contents(emails_folder)
         
         # Find the first .eml file
@@ -145,7 +145,7 @@ async def test_email_with_metadata():
         assert len(metadata["text_content"]) > 0
         
         # Verify the processed file exists in OneDrive
-        processed_folder = config["onedrive"]["processed_emails_folder"]  # data_PMSA/processed_emails_2
+        processed_folder = app_config.onedrive.processed_emails_folder  # data_PMSA/processed_emails_2
         processed_path = f"{processed_folder}/{result['filename']}"
         file_exists = await client.file_exists(processed_path)
         assert file_exists, f"Processed file not found at {processed_path}"
@@ -163,10 +163,10 @@ async def test_filename_generation():
     
     try:
         # Get a real message from OneDrive
-        user_email = config["user"]["email"]
+        user_email = app_config.user.email
         
         # List files in the emails_1 folder to find .eml files
-        emails_folder = config["onedrive"]["emails_folder"]  # data_PMSA/emails_1
+        emails_folder = app_config.onedrive.emails_folder  # data_PMSA/emails_1
         files = await list_folder_contents(emails_folder)
         
         # Find the first .eml file
@@ -187,7 +187,7 @@ async def test_filename_generation():
         assert result["metadata"]["document_id"] in result["filename"]
         
         # Verify the processed file exists in OneDrive
-        processed_folder = config["onedrive"]["processed_emails_folder"]  # data_PMSA/processed_emails_2
+        processed_folder = app_config.onedrive.processed_emails_folder  # data_PMSA/processed_emails_2
         processed_path = f"{processed_folder}/{result['filename']}"
         file_exists = await client.file_exists(processed_path)
         assert file_exists, f"Processed file not found at {processed_path}"
