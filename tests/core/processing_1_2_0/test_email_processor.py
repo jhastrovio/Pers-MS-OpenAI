@@ -28,7 +28,7 @@ async def test_email_processing_workflow():
     3. Save metadata
     """
     processor = EmailProcessor(config)
-    client = GraphClient()
+    async with GraphClient() as client:
     
     try:
         # Get a real message from OneDrive
@@ -102,7 +102,7 @@ async def test_email_processing_workflow():
 async def test_email_with_metadata():
     """Test processing an email with complete metadata using a real .eml file."""
     processor = EmailProcessor(config)
-    client = GraphClient()
+    async with GraphClient() as client:
     
     try:
         # Get a real message from OneDrive
@@ -159,9 +159,9 @@ async def test_email_with_metadata():
 async def test_filename_generation():
     """Test that filenames are generated correctly for real emails."""
     processor = EmailProcessor(config)
-    client = GraphClient()
-    
-    try:
+    async with GraphClient() as client:
+
+        try:
         # Get a real message from OneDrive
         user_email = config["user"]["email"]
         
@@ -191,7 +191,7 @@ async def test_filename_generation():
         processed_path = f"{processed_folder}/{result['filename']}"
         file_exists = await client.file_exists(processed_path)
         assert file_exists, f"Processed file not found at {processed_path}"
-        
+
     except Exception as e:
         pytest.fail(f"Filename generation test failed: {str(e)}")
     finally:

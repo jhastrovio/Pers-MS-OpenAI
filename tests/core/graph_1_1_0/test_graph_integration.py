@@ -11,6 +11,7 @@ import dotenv
 import re
 from core.utils.config import config
 import httpx
+from unittest.mock import AsyncMock
 dotenv.load_dotenv()
 
 print("CLIENT_ID:", os.getenv("CLIENT_ID"))
@@ -196,4 +197,17 @@ def test_environment_variables():
     # Check that all required variables are set
     required_vars = ["client_id", "client_secret", "tenant_id"]
     if not all(config["azure"][k] for k in required_vars):
-        pytest.skip("Required environment variables not set") 
+        pytest.skip("Required environment variables not set")
+
+
+@pytest.mark.asyncio
+async def test_graphclient_context_manager_closes():
+    """GraphClient closes its AsyncClient when used as a context manager."""
+    client = GraphClient()
+    aclose_mock = AsyncMock()
+    client.client.aclose = aclose_mock
+
+    async with client as cm:
+        assert cm is client
+
+    aclose_mock.assert_awaited_once()
