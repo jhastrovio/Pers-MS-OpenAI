@@ -9,7 +9,7 @@ authors = [
     { name = "James Hassett" }
 ]
 description = "Personal Microsoft Graph API Integration with OpenAI"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 classifiers = [
     "Programming Language :: Python :: 3",
     "Operating System :: OS Independent",
