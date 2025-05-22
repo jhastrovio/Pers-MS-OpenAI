@@ -39,6 +39,14 @@ class GraphClient:
         self.client = httpx.AsyncClient()
         self._access_token = None
         self._token_expiry = None
+
+    async def __aenter__(self) -> "GraphClient":
+        """Enter the async context manager and return self."""
+        return self
+
+    async def __aexit__(self, exc_type, exc, tb) -> None:
+        """Close the underlying HTTP client when exiting the context."""
+        await self.close()
         
     async def _get_access_token(self):
         """Get a valid access token, refreshing if necessary."""
