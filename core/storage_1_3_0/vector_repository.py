@@ -2,6 +2,7 @@ from pathlib import Path
 from typing import Any, Dict, List, Optional
 import asyncio
 import logging
+from core.utils.logging import configure_logging
 import os
 
 import orjson
@@ -175,7 +176,7 @@ class VectorRepository:
 
 async def main():
     """Main entry point for vector store operations."""
-    logging.basicConfig(level=logging.INFO)
+    configure_logging(level=logging.INFO)
     
     repo = VectorRepository()
     directory = config["onedrive"]["processed_emails_folder"]
