@@ -4,7 +4,7 @@
 - [X] Solidify Ingestion Pipeline
 - [X] Verify connectors for Microsoft Graph (email/docs) → OneDrive → JSONL batching
 - [X] Validate key attributes (author, sent_at, source) for downstream filtering and conformance with JSON schema
-- [ ] Ensure daily delta vs. full re-ingestion logic handles schema changes & deletions 
+- [x] Ensure daily delta vs. full re-ingestion logic handles schema changes & deletions 
 - [ ] Integration test outlines the expected production workflow: track which files are processed, only upload new or modified ones, and handle duplicates
 - [ ] Write new production flow to orchestrate all modules by a scheduled job or small runner script
 - [ ] Explore handling of edge cases/encrypted files
