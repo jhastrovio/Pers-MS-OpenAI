@@ -4,11 +4,44 @@ Test script for email fetching functionality from Microsoft Graph API.
 
 import asyncio
 import os
+from unittest.mock import AsyncMock
+
+import httpx
+import pytest
 from core.graph_1_1_0.main import GraphClient
 from core.utils.config import get_env_variable, config
 from core.utils.logging import get_logger
 
 logger = get_logger(__name__)
+
+
+@pytest.mark.asyncio
+async def test_fetch_and_store_email_sets_source_url():
+    """fetch_and_store_email should set EmailDocumentMetadata.source_url from upload_file."""
+
+    client = GraphClient()
+    client._get_access_token = AsyncMock(return_value="token")
+    client.upload_file = AsyncMock(return_value="https://onedrive.example/email.eml")
+
+    raw_metadata = {
+        "subject": "Test Subject",
+        "webUrl": "https://outlook.example/message",
+        "receivedDateTime": "2024-01-01T00:00:00Z",
+        "size": 123,
+        "hasAttachments": False,
+        "from": {"emailAddress": {"address": "sender@example.com"}},
+        "toRecipients": [{"emailAddress": {"address": "recipient@example.com"}}],
+        "ccRecipients": [],
+        "bodyPreview": "Preview",
+    }
+
+    metadata_response = httpx.Response(200, json=raw_metadata)
+    eml_response = httpx.Response(200, content=b"eml data")
+    client.client.get = AsyncMock(side_effect=[metadata_response, eml_response])
+
+    result = await client.fetch_and_store_email("user@example.com", "msg-id")
+
+    assert result["metadata"]["source_url"] == "https://onedrive.example/email.eml"
 
 async def get_recent_emails(client: GraphClient, user_email: str, limit: int = 5) -> list:
     """Get recent emails from Outlook.
