@@ -1,24 +1,30 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-dotenv==1.1.0
-pydantic==2.4.2
-httpx==0.25.1
-msal==1.24.0
-python-docx==0.8.11
-pypdf==4.2.0
-python-pptx==0.6.21
-openpyxl==3.1.2
-chardet==5.2.0
-openai==1.78.1
-beautifulsoup4==4.12.3
-pandas==2.1.4
-orjson==3.9.1
-# Advanced document processing
-pdfplumber==0.10.3
-unstructured[local-inference]==0.11.7
-pytesseract==0.3.10
-Pillow==10.1.0
-# Text processing and chunking
-nltk==3.8.1
-spacy==3.7.2
-tiktoken==0.5.2
+# Web framework
+fastapi>=0.104.1,<0.105.0
+uvicorn[standard]>=0.24.0,<0.25.0
+
+# Configuration & security
+python-dotenv>=1.1.0,<2.0
+pydantic>=2.4.2,<3.0.0
+msal>=1.24.0,<2.0.0
+
+# Doc formats & parsing
+python-docx>=1.1.0,<2.0
+pypdf>=4.2.0,<5.0.0
+python-pptx>=0.6.21,<0.7.0
+unstructured[local-inference]>=0.11.7,<0.12.0
+
+# Data & ML utilities
+pandas>=2.1.4,<3.0
+numpy>=1.26.0,<2.0
+pdfplumber>=0.10.3,<0.11.0
+pytesseract>=0.3.10,<0.4.0
+spacy>=3.7.2,<4.0.0
+nltk>=3.8.1,<4.0.0
+
+# HTTP clients & scraping
+httpx>=0.25.1,<0.26.0
+beautifulsoup4>=4.12.3,<5.0.0
+
+# OpenAI & tokenization
+openai>=1.78.1,<2.0.0
+tiktoken>=0.5.2,<0.6.0
