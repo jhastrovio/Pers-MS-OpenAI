@@ -8,7 +8,7 @@ from core.processing_1_2_0.engine.base import BaseProcessor
 from core.graph_1_1_0.metadata import EmailDocumentMetadata
 from core.processing_1_2_0.processors.document_processor import DocumentProcessor
 from core.utils.logging import get_logger
-from core.utils.config import PROCESSING_CONFIG
+from core.utils.config import PROCESSING_CONFIG, config
 import os
 import json
 from core.utils.onedrive_utils import load_json_file, save_json_file
@@ -30,7 +30,6 @@ class AttachmentProcessor(BaseProcessor):
         """
         self.doc_processor = doc_processor
         self.attachments_folder = PROCESSING_CONFIG["FOLDERS"]["ATTACHMENTS"]
-        self.state_file = PROCESSING_CONFIG["FOLDERS"].get("FILE_LIST", config["onedrive"]["file_list"])
         self.processing_state = None
         logger.info("AttachmentProcessor initialized with DocumentProcessor")
     
@@ -42,7 +41,14 @@ class AttachmentProcessor(BaseProcessor):
             self.processing_state = state_data
         except Exception as e:
             logger.warning(f"Could not load attachment processing state, starting fresh: {str(e)}")
-            self.processing_state = None
+            self.processing_state = {
+                "last_updated": None,
+                "processed_items": {},
+                "metadata": {
+                    "processor_type": "AttachmentProcessor",
+                    "version": "1.2.0"
+                }
+            }
 
     async def save_processing_state(self) -> None:
         """Save the current processing state to OneDrive."""

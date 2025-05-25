@@ -14,8 +14,8 @@ import uuid
 from core.processing_1_2_0.processors.document_processor import DocumentProcessor
 from core.processing_1_2_0.processors.attachment_processor import AttachmentProcessor
 from core.graph_1_1_0.metadata import EmailDocumentMetadata
+from core.graph_1_1_0.main import GraphClient
 from core.utils.config import config, PROCESSING_CONFIG
-from core.utils.ms_graph_client import GraphClient
 
 LOG_PATH = "itest_attachment_processing.log"
 

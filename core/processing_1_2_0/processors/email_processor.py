@@ -317,10 +317,6 @@ class EmailProcessor(BaseProcessor):
                 type="email",
                 filename=None,  # To be set after naming
                 source_url=graph_metadata.get("webUrl", default_outlook_url),
-                created_at=datetime.now().isoformat(),
-                size=len(eml_content),
-                content_type="message/rfc822",
-                source="email",
                 is_attachment=False,
                 parent_email_id=None,
                 message_id=message_id,

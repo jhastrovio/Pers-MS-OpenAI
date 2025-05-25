@@ -11,7 +11,7 @@ from openai.types.file_object import FileObject
 
 from core.utils.config import config
 from core.utils.onedrive_utils import list_folder_contents
-from core.utils.ms_graph_client import GraphClient
+from core.graph_1_1_0.main import GraphClient
 
 logger = logging.getLogger(__name__)
 
@@ -33,44 +33,44 @@ class VectorRepository:
         self.graph_client = GraphClient()
         logger.info(f"Initialized vector store repository with store ID: {self.store_id}")
 
-   def _build_attrs(self, meta: Dict[str, Any]) -> Dict[str, str]:
-    """Build attributes from metadata for vector store."""
-    attrs: Dict[str, str] = {}
+    def _build_attrs(self, meta: Dict[str, Any]) -> Dict[str, str]:
+        """Build attributes from metadata for vector store."""
+        attrs: Dict[str, str] = {}
 
-    # --- your existing logic here ---
-    for k in KEEP:
-        if v := meta.get(k):
-            attrs[k.replace("from_", "from")] = str(v)[:512]
+        # --- your existing logic here ---
+        for k in KEEP:
+            if v := meta.get(k):
+                attrs[k.replace("from_", "from")] = str(v)[:512]
 
-    if recipients := meta.get("to", []) + meta.get("cc", []):
-        attrs["recipients"] = ",".join(str(r) for r in recipients)[:512]
+        if recipients := meta.get("to", []) + meta.get("cc", []):
+            attrs["recipients"] = ",".join(str(r) for r in recipients)[:512]
 
-    if meta.get("last_modified") and meta.get("created_at"):
-        attrs["dates"] = orjson.dumps({
-            "c": meta["created_at"][:19],
-            "m": meta["last_modified"][:19]
-        }).decode()
+        if meta.get("last_modified") and meta.get("created_at"):
+            attrs["dates"] = orjson.dumps({
+                "c": meta["created_at"][:19],
+                "m": meta["last_modified"][:19]
+            }).decode()
 
-    if parent_id := meta.get("parent_email_id"):
-        attrs["rel"] = str(parent_id)
+        if parent_id := meta.get("parent_email_id"):
+            attrs["rel"] = str(parent_id)
 
-    if tags := meta.get("tags"):
-        attrs["tags"] = ",".join(str(t) for t in tags)[:512]
+        if tags := meta.get("tags"):
+            attrs["tags"] = ",".join(str(t) for t in tags)[:512]
 
-    if one_drive_url := meta.get("one_drive_url", ""):
-        attrs["source_id"] = one_drive_url.rpartition("/")[-1]
+        if one_drive_url := meta.get("one_drive_url", ""):
+            attrs["source_id"] = one_drive_url.rpartition("/")[-1]
 
-    attrs["version"] = "v1"
+        attrs["version"] = "v1"
 
-    # --- new extension logic ---
-    filename = meta.get("filename", "")
-    if "." in filename:
-        ext = filename.rsplit(".", 1)[1].lower()
-        attrs["extension"] = f".{ext}"  # e.g. ".xls" or ".xlsx"
-    else:
-        attrs["extension"] = ""
+        # --- new extension logic ---
+        filename = meta.get("filename", "")
+        if "." in filename:
+            ext = filename.rsplit(".", 1)[1].lower()
+            attrs["extension"] = f".{ext}"  # e.g. ".xls" or ".xlsx"
+        else:
+            attrs["extension"] = ""
 
-    return attrs
+        return attrs
 
     def _extract_text_content(self, meta: Dict[str, Any]) -> str:
         """Extract text content from metadata, handling different possible field names."""

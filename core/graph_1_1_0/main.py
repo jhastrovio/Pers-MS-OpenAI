@@ -1,33 +1,31 @@
 """
-Microsoft Graph Integration Module
+Microsoft Graph API Client for OneDrive and Email operations.
 
-This module handles all interactions with Microsoft Graph API, including:
-- Email retrieval and storage
-- OneDrive document synchronization
-- Authentication and token management
+This module provides a comprehensive client for interacting with Microsoft Graph API,
+including email retrieval, OneDrive file operations, and authentication management.
 """
 
-from typing import List, Dict, Any
+import asyncio
+import json
 import os
-from msal import PublicClientApplication, ConfidentialClientApplication
-from core.utils.config import get_env_variable, config
-from core.utils.logging import get_logger
+from datetime import datetime, timedelta
+import tempfile
+import logging
+from typing import Dict, Any, List, Optional
+import httpx
+from msal import ConfidentialClientApplication
+
+from core.utils.config import config
 from core.graph_1_1_0.metadata import EmailDocumentMetadata
 from core.graph_1_1_0.metadata_extractor import MetadataExtractor
-import httpx
-import json
-from datetime import datetime, timedelta
-import urllib.parse
-import re
 from core.utils.filename_utils import create_hybrid_filename
 
-logger = get_logger(__name__)
+logger = logging.getLogger(__name__)
 
-# Custom JSON encoder to handle datetime objects
+# JSON encoder for datetime objects
 class DateTimeEncoder(json.JSONEncoder):
-    """JSON encoder that converts datetime objects to ISO format strings."""
     def default(self, obj):
-        if isinstance(obj, (datetime, timedelta)):
+        if isinstance(obj, datetime):
             return obj.isoformat()
         return super().default(obj)
 
@@ -36,7 +34,30 @@ class GraphClient:
     
     def __init__(self):
         """Initialize the Graph client with authentication."""
-        self.client = httpx.AsyncClient()
+        # Use environment variables directly if config doesn't have azure section
+        if 'azure' in config:
+            self.client_id = config['azure']['client_id']
+            self.client_secret = config['azure']['client_secret']
+            self.tenant_id = config['azure']['tenant_id']
+        else:
+            # Fallback to environment variables
+            import os
+            self.client_id = os.getenv('CLIENT_ID')
+            self.client_secret = os.getenv('CLIENT_SECRET')
+            self.tenant_id = os.getenv('TENANT_ID')
+        
+        # Define required scopes for Microsoft Graph API
+        self.scopes = ["https://graph.microsoft.com/.default"]
+        
+        # Initialize MSAL client
+        self.msal_client = ConfidentialClientApplication(
+            client_id=self.client_id,
+            client_credential=self.client_secret,
+            authority=f"https://login.microsoftonline.com/{self.tenant_id}"
+        )
+
+        # Initialize httpx client with redirect following enabled
+        self.client = httpx.AsyncClient(follow_redirects=True, timeout=30.0)
         self._access_token = None
         self._token_expiry = None
 
@@ -57,18 +78,15 @@ class GraphClient:
     async def _refresh_token(self):
         """Refresh the access token using client credentials."""
         try:
-            token_url = f"https://login.microsoftonline.com/{config['azure']['tenant_id']}/oauth2/v2.0/token"
-            data = {
-                'client_id': config['azure']['client_id'],
-                'client_secret': config['azure']['client_secret'],
-                'scope': 'https://graph.microsoft.com/.default',
-                'grant_type': 'client_credentials'
-            }
-            response = await self.client.post(token_url, data=data)
-            response.raise_for_status()
-            token_data = response.json()
-            self._access_token = token_data['access_token']
-            self._token_expiry = datetime.now() + timedelta(seconds=token_data['expires_in'] - 300)
+            # Use MSAL for token management
+            token_result = self.msal_client.acquire_token_for_client(scopes=self.scopes)
+            if "access_token" not in token_result:
+                error_msg = f"Could not obtain access token: {json.dumps(token_result)}"
+                logger.error(error_msg)
+                raise RuntimeError(error_msg)
+            
+            self._access_token = token_result["access_token"]
+            self._token_expiry = datetime.now() + timedelta(seconds=token_result.get('expires_in', 3600) - 300)
         except Exception as e:
             raise Exception(f"Failed to refresh token: {str(e)}")
     
@@ -98,6 +116,21 @@ class GraphClient:
         except Exception as e:
             logger.error(f"Error listing files in {folder_path}: {str(e)}")
             return []
+
+    # CONSOLIDATED METHOD: Alternative name for compatibility
+    async def list_files_in_folder(self, folder_path: str) -> List[Dict[str, Any]]:
+        """List files in a specific OneDrive folder (compatibility method).
+        
+        Args:
+            folder_path: The path to the folder in OneDrive
+            
+        Returns:
+            List of file metadata objects
+        """
+        user_email = config.get("user", {}).get("email") or os.getenv('user_email')
+        if not user_email:
+            raise ValueError("User email not found in config or environment")
+        return await self.list_files(user_email, folder_path)
     
     async def get_file_content(self, user_email: str, file_path: str) -> bytes:
         """Get the content of a file from OneDrive.
@@ -117,163 +150,171 @@ class GraphClient:
             file_path = file_path.replace('\\', '/').strip('/')
             url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/{file_path}:/content"
             
+            logger.debug(f"Requesting file content from: {url}")
+            
+            # Make the request with redirects enabled
             response = await self.client.get(url, headers=headers)
+            
+            logger.debug(f"Response status: {response.status_code}")
+            logger.debug(f"Response headers: {dict(response.headers)}")
+            
             response.raise_for_status()
             
-            return response.content
+            # Check if we got actual content
+            if response.content:
+                logger.debug(f"Successfully downloaded file: {file_path} ({len(response.content)} bytes)")
+                return response.content
+            else:
+                logger.warning(f"File download resulted in empty content: {file_path}")
+                return None
             
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error downloading file {file_path}: {e.response.status_code} - {e.response.text}")
+            return None
         except Exception as e:
             logger.error(f"Error getting content of file {file_path}: {str(e)}")
             return None
-    
-    async def fetch_and_store_email(self, user_email: str, message_id: str) -> dict:
-        """Fetch an email message and store it in three stages:
-        1. Fetch metadata and web URL
-        2. Save raw .eml
-        3. Save attachments
+
+    # CONSOLIDATED METHOD: Alternative name for compatibility
+    async def download_file_from_onedrive(self, folder_path: str, file_name: str) -> bytes:
+        """Download a file from OneDrive by folder_path and file_name (compatibility method).
         
         Args:
-            user_email: The email address of the user
-            message_id: The ID of the message to fetch
+            folder_path: The folder path in OneDrive
+            file_name: The name of the file to download
+            
+        Returns:
+            File content as bytes
+        """
+        user_email = config.get("user", {}).get("email") or os.getenv('user_email')
+        if not user_email:
+            raise ValueError("User email not found in config or environment")
+        
+        # Combine folder path and file name
+        full_path = f"{folder_path.strip('/')}/{file_name}"
+        return await self.get_file_content(user_email, full_path)
+
+    # CONSOLIDATED METHOD: Email retrieval functionality
+    async def get_emails(self, limit: int = 10) -> List[Dict[str, Any]]:
+        """Retrieve emails from user's mailbox.
+        
+        Args:
+            limit: Maximum number of emails to retrieve
+            
+        Returns:
+            List of email objects with metadata
+        """
+        logger.info(f"Retrieving {limit} emails from mailbox")
+        access_token = await self._get_access_token()
+        headers = {"Authorization": f"Bearer {access_token}"}
+        
+        try:
+            user_email = config.get("user", {}).get("email") or os.getenv('user_email')
+            if not user_email:
+                raise ValueError("User email not found in config or environment")
+                
+            response = await self.client.get(
+                f'https://graph.microsoft.com/v1.0/users/{user_email}/messages',
+                headers=headers,
+                params={"$top": limit}
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get('value', [])
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error occurred: {str(e)}")
+            logger.error(f"Response content: {e.response.text}")
+            raise
+        except Exception as e:
+            logger.error(f"Error retrieving emails: {str(e)}")
+            raise
+
+    # CONSOLIDATED METHOD: Document retrieval functionality  
+    async def get_documents(self) -> List[Dict[str, Any]]:
+        """Retrieve documents from OneDrive.
         
         Returns:
-            dict: Results including metadata, .eml path, and attachment paths
+            List of document objects with metadata and content.
         """
+        logger.info("Retrieving documents from OneDrive")
+        access_token = await self._get_access_token()
+        headers = {"Authorization": f"Bearer {access_token}"}
+        
         try:
-            access_token = await self._get_access_token()
-            headers = {"Authorization": f"Bearer {access_token}"}
-            
-            # Stage 1: Fetch message metadata
-            metadata_url = f"https://graph.microsoft.com/v1.0/users/{user_email}/messages/{message_id}"
-            metadata_response = await self.client.get(metadata_url, headers=headers)
-            try:
-                metadata_response.raise_for_status()
-                raw_metadata = metadata_response.json()
-            except Exception as e:
-                try:
-                    error_body = metadata_response.text
-                    logger.error(f"Error response body: {error_body}")
-                except Exception:
-                    pass
-                raise
-            
-            # Stage 2: Fetch and save raw .eml
-            eml_url = f"https://graph.microsoft.com/v1.0/users/{user_email}/messages/{message_id}/$value"
-            eml_response = await self.client.get(eml_url, headers=headers)
-            eml_response.raise_for_status()
-            eml_content = eml_response.content
-            
-            # Create hybrid filename for .eml
-            subject = raw_metadata.get("subject", "No_Subject")
-            eml_filename = create_hybrid_filename(message_id, subject, ".eml")
-            eml_path = os.path.join(config["onedrive"]["emails_folder"], eml_filename)
-            eml_url = await self.upload_file(user_email, eml_path, eml_content)
-            
-            # Create structured metadata for the email
-            email_metadata = EmailDocumentMetadata(
-                document_id=message_id,
-                type="email",
-                filename=eml_filename,
-                source_url=eml_url,
-                created_at=raw_metadata.get("receivedDateTime", ""),
-                size=raw_metadata.get("size", 0),
-                content_type="message/rfc822",
-                source="outlook",
-                is_attachment=False,
-                message_id=message_id,
-                subject=subject,
-                from_=raw_metadata.get("from", {}).get("emailAddress", {}).get("address", ""),
-                to=[recipient.get("emailAddress", {}).get("address", "") for recipient in raw_metadata.get("toRecipients", [])],
-                cc=[recipient.get("emailAddress", {}).get("address", "") for recipient in raw_metadata.get("ccRecipients", [])],
-                date=raw_metadata.get("receivedDateTime", ""),
-                text_content=raw_metadata.get("bodyPreview", ""),
-                attachments=[]
-            )
-            
-            # Stage 3: Fetch and store attachments if present
-            attachment_paths = []
-            if raw_metadata.get("hasAttachments"):
-                attachments_url = f"https://graph.microsoft.com/v1.0/users/{user_email}/messages/{message_id}/attachments"
-                attachments_response = await self.client.get(attachments_url, headers=headers)
-                attachments_response.raise_for_status()
-                attachments = attachments_response.json().get("value", [])
+            user_email = config.get("user", {}).get("email") or os.getenv('user_email')
+            if not user_email:
+                raise ValueError("User email not found in config or environment")
                 
-                for attachment in attachments:
-                    # Skip image attachments
-                    content_type = attachment.get("contentType", "").lower()
-                    if content_type.startswith("image/"):
-                        logger.info(f"Skipping image attachment: {attachment.get('name', 'unknown')}")
-                        continue
-                        
-                    # Get attachment content
-                    att_url = f"https://graph.microsoft.com/v1.0/users/{user_email}/messages/{message_id}/attachments/{attachment['id']}/$value"
-                    att_response = await self.client.get(att_url, headers=headers)
-                    att_response.raise_for_status()
-                    att_content = att_response.content
-                    
-                    # Create hybrid filename for attachment
-                    att_name = attachment["name"]
-                    att_ext = os.path.splitext(att_name)[1]
-                    att_filename = create_hybrid_filename(
-                        f"{message_id}_{attachment['id']}", 
-                        att_name,
-                        att_ext
-                    )
-                    att_path = os.path.join(config["onedrive"]["attachments_folder"], att_filename)
-                    att_url = await self.upload_file(user_email, att_path, att_content)
-                    
-                    # Extract metadata for the attachment
-                    att_metadata = MetadataExtractor.extract_metadata(att_content, attachment.get("contentType", ""))
-                    
-                    # Create structured metadata for the attachment
-                    attachment_metadata = EmailDocumentMetadata(
-                        document_id=attachment["id"],
-                        type="document",
-                        filename=att_filename,
-                        source_url=att_url,
-                        created_at=raw_metadata.get("receivedDateTime", ""),
-                        size=attachment.get("size", 0),
-                        content_type=attachment.get("contentType", ""),
-                        source="outlook",
-                        is_attachment=True,
-                        parent_email_id=message_id,
-                        message_id=message_id,
-                        subject=subject,
-                        from_=raw_metadata.get("from", {}).get("emailAddress", {}).get("address", ""),
-                        title=att_metadata.get("title", att_name),
-                        author=att_metadata.get("author", ""),
-                        last_modified=att_metadata.get("last_modified", ""),
-                        text_content=att_metadata.get("text_content", "")
-                    )
-                    
-                    # Save companion JSON file with metadata
-                    base_name, ext = os.path.splitext(att_filename)
-                    json_filename = f"{base_name}{ext}.json"
-                    json_path = os.path.join(config["onedrive"]["attachments_folder"], json_filename)
-                    json_content = json.dumps(attachment_metadata.to_dict(), indent=2, cls=DateTimeEncoder)
-                    json_url = await self.upload_file(user_email, json_path, json_content.encode('utf-8'))
-                    
-                    attachment_paths.append({
-                        "id": attachment["id"],
-                        "name": attachment["name"],
-                        "path": att_path,
-                        "metadata": attachment_metadata.to_dict(),
-                        "metadata_path": json_path,
-                        "metadata_url": json_url
-                    })
-                    
-                    # Add attachment ID to email metadata
-                    email_metadata.attachments.append(attachment["id"])
+            response = await self.client.get(
+                f'https://graph.microsoft.com/v1.0/users/{user_email}/drive/root/children',
+                headers=headers,
+                params={"$top": 10}
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get('value', [])
+        except httpx.HTTPStatusError as e:
+            logger.error(f"HTTP error occurred: {str(e)}")
+            logger.error(f"Response content: {e.response.text}")
+            raise
+        except Exception as e:
+            logger.error(f"Error retrieving documents: {str(e)}")
+            raise
+
+    # CONSOLIDATED METHOD: Save to OneDrive functionality
+    async def save_to_onedrive(self, file_path: str, file_name: str, folder: str = None) -> Dict[str, Any]:
+        """Upload a file to OneDrive using Microsoft Graph API (compatibility method).
+
+        Args:
+            file_path: Local path to the file to upload.
+            file_name: Name to give the file in OneDrive.
+            folder: Optional folder path in OneDrive. If not provided, uses the default from config.
+
+        Returns:
+            Dict containing the response from the upload operation.
+        """
+        logger.info(f"Uploading file {file_name} to OneDrive")
+        
+        # Use the folder from config if not provided
+        if folder is None:
+            folder = config.get("onedrive", {}).get("emails_folder", "emails_1")
+
+        try:
+            with open(file_path, "rb") as file:
+                content = file.read()
             
-            return {
-                "metadata": email_metadata.to_dict(),
-                "eml_path": eml_path,
-                "attachments": attachment_paths
-            }
+            # Use the modern upload_file method
+            user_email = config.get("user", {}).get("email") or os.getenv('user_email')
+            if not user_email:
+                raise ValueError("User email not found in config or environment")
+                
+            web_url = await self.upload_file(user_email, f"{folder}/{file_name}", content)
+            return {"webUrl": web_url}
             
         except Exception as e:
-            raise Exception(f"Failed to fetch and store email: {str(e)}")
+            logger.error(f"Error uploading file to OneDrive: {str(e)}")
+            raise
+
+    # CONSOLIDATED METHOD: Save email content functionality
+    async def save_email_content_to_onedrive(self, email_content: str, file_name: str, folder: str = None) -> dict:
+        """Upload email content directly to OneDrive as a file (compatibility method)."""
+        logger.info(f"Uploading email content as {file_name} to OneDrive")
         
+        if folder is None:
+            folder = config.get("onedrive", {}).get("emails_folder", "emails_1")
+            
+        user_email = config.get("user", {}).get("email") or os.getenv('user_email')
+        if not user_email:
+            raise ValueError("User email not found in config or environment")
+            
+        # Use the modern upload_file method
+        web_url = await self.upload_file(
+            user_email, 
+            f"{folder}/{file_name}", 
+            email_content.encode("utf-8")
+        )
+        return {"webUrl": web_url}
+
     async def upload_file(self, user_email: str, file_path: str, content: bytes) -> str:
         """Upload a file to OneDrive.
         
@@ -372,7 +413,7 @@ class GraphClient:
     async def close(self):
         """Close the HTTP client."""
         await self.client.aclose()
-        
+    
     async def file_exists(self, file_path: str) -> bool:
         """Check if a file exists in OneDrive.
         
@@ -383,7 +424,10 @@ class GraphClient:
             bool: True if the file exists, False otherwise
         """
         try:
-            user_email = config["user"]["email"]
+            user_email = config.get("user", {}).get("email") or os.getenv('user_email')
+            if not user_email:
+                raise ValueError("User email not found in config or environment")
+                
             access_token = await self._get_access_token()
             headers = {"Authorization": f"Bearer {access_token}"}
             

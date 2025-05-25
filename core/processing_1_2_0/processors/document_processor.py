@@ -16,17 +16,18 @@ import uuid
 
 from core.processing_1_2_0.engine.base import BaseProcessor, ProcessingError, ValidationError
 from core.processing_1_2_0.engine.text_extractor import TextExtractor
+from core.processing_1_2_0.engine.enhanced_text_extractor import EnhancedTextExtractor, ExtractionConfig, DocumentChunk
 from core.graph_1_1_0.metadata_extractor import MetadataExtractor
 from core.graph_1_1_0.metadata import EmailDocumentMetadata
 from core.graph_1_1_0.main import GraphClient, DateTimeEncoder
-from core.utils.config import PROCESSING_CONFIG
+from core.utils.config import PROCESSING_CONFIG, config
 from core.utils.logging import get_logger
 from core.utils.onedrive_utils import load_json_file, save_json_file
 
 logger = get_logger(__name__)
 
 class DocumentProcessor(BaseProcessor):
-    """Handles processing of document files."""
+    """Handles processing of document files with advanced text extraction."""
     
     def __init__(self, processor_config: Dict[str, Any] = None):
         """Initialize the document processor.
@@ -42,6 +43,21 @@ class DocumentProcessor(BaseProcessor):
         # State file path from config
         self.state_file = self.config["FOLDERS"].get("FILE_LIST", config["onedrive"]["file_list"])
         self.processing_state = None
+        
+        # Initialize enhanced text extractor
+        extraction_config = ExtractionConfig(
+            use_layout_analysis=self.config.get("ENHANCED_EXTRACTION", {}).get("USE_LAYOUT_ANALYSIS", True),
+            chunk_documents=self.config.get("ENHANCED_EXTRACTION", {}).get("CHUNK_DOCUMENTS", True),
+            chunk_size=self.config.get("ENHANCED_EXTRACTION", {}).get("CHUNK_SIZE", 500),
+            chunk_overlap=self.config.get("ENHANCED_EXTRACTION", {}).get("CHUNK_OVERLAP", 75),
+            remove_headers_footers=self.config.get("ENHANCED_EXTRACTION", {}).get("REMOVE_HEADERS_FOOTERS", True),
+            normalize_whitespace=self.config.get("ENHANCED_EXTRACTION", {}).get("NORMALIZE_WHITESPACE", True),
+            use_ocr_fallback=self.config.get("ENHANCED_EXTRACTION", {}).get("USE_OCR_FALLBACK", True)
+        )
+        self.enhanced_extractor = EnhancedTextExtractor(extraction_config)
+        
+        # Flag to enable/disable enhanced extraction
+        self.use_enhanced_extraction = self.config.get("ENHANCED_EXTRACTION", {}).get("ENABLED", True)
     
     async def process(self, file_path_or_data: Union[str, Dict[str, Any]]) -> Dict[str, Any]:
         """Process a document file or raw content.
@@ -107,13 +123,23 @@ class DocumentProcessor(BaseProcessor):
                     file_path = tmp_file.name
                 
                 try:
-                    return await self._process_document(file_path, content_type=content_type, onedrive_path=onedrive_path)
+                    # Pass the original filename info to _process_document
+                    return await self._process_document(
+                        file_path, 
+                        content_type=content_type, 
+                        onedrive_path=onedrive_path,
+                        original_filename=filename  # Pass the original filename
+                    )
                 finally:
                     os.remove(file_path)
             
             # Handle file path
             elif file_path:
-                return await self._process_document(file_path, content_type=content_type, onedrive_path=onedrive_path)
+                return await self._process_document(
+                    file_path, 
+                    content_type=content_type, 
+                    onedrive_path=onedrive_path
+                )
             
             else:
                 raise ValidationError("Either file_path or content must be provided")
@@ -133,6 +159,7 @@ class DocumentProcessor(BaseProcessor):
             content_type: str | None = None,
             meta_overrides: dict[str, Any] | None = None,
             onedrive_path: str | None = None,  # Add parameter for original OneDrive path
+            original_filename: str | None = None,  # Add parameter for original filename
         ) -> Dict[str, Any]:
         """Process a document file.
         
@@ -141,15 +168,29 @@ class DocumentProcessor(BaseProcessor):
             content_type: Optional content type override
             meta_overrides: Optional dictionary of metadata field overrides
             onedrive_path: Optional path to the original file in OneDrive
+            original_filename: Optional original filename when processing raw content
             
         Returns:
             Processing result
         """
         try:
-            # Get original filename by removing 'temp_' prefix if present
-            original_filename = os.path.basename(file_path)
-            if original_filename.startswith('temp_'):
-                original_filename = original_filename[5:]  # Remove 'temp_' prefix
+            # Determine the original filename (priority: onedrive_path > original_filename > file_path)
+            if onedrive_path:
+                # Extract filename from OneDrive path
+                original_filename = os.path.basename(onedrive_path)
+            elif original_filename:
+                # Use the provided original filename
+                pass  # original_filename is already set
+            else:
+                # Fall back to local file path (for backwards compatibility)
+                original_filename = os.path.basename(file_path)
+                # Try to remove temp filename patterns
+                if original_filename.startswith('temp_'):
+                    original_filename = original_filename[5:]  # Remove 'temp_' prefix
+                elif original_filename.startswith('tmp') and len(original_filename) > 10:
+                    # For tempfile.NamedTemporaryFile generated names like 'tmpfo8euq8t'
+                    # This is a fallback - we should ideally get the original filename another way
+                    logger.warning(f"Using temp filename as fallback: {original_filename}")
                 
             logger.info(f"Processing document: {original_filename}")
             
@@ -157,8 +198,8 @@ class DocumentProcessor(BaseProcessor):
             file_size = os.path.getsize(file_path)
             content_type = content_type or self._detect_content_type(original_filename)
             
-            # Extract text content
-            text_content = await self._extract_document_text(file_path)
+            # Extract text content using enhanced extractor
+            text_content, chunks, extraction_metadata = await self._extract_document_text_enhanced(file_path, content_type, original_filename)
             
             # Extract additional metadata
             additional_metadata = {}
@@ -183,7 +224,8 @@ class DocumentProcessor(BaseProcessor):
             file_ext = os.path.splitext(original_filename)[1].lower().lstrip('.')
             # Set date from last_modified if available
             doc_date = additional_metadata.get('last_modified', None)
-            # Create document metadata using EmailDocumentMetadata
+            
+            # Create document metadata using EmailDocumentMetadata with enhanced info
             document_metadata = EmailDocumentMetadata(
                 document_id=document_id,
                 type=file_ext or "document",
@@ -205,13 +247,42 @@ class DocumentProcessor(BaseProcessor):
             
             # Save metadata to OneDrive
             try:
-                # Create a new filename for the JSON metadata
+                # Create a new filename for the JSON metadata using original filename
                 timestamp_prefix = datetime.now().strftime("%Y-%m-%d")
+                # Clean the base name for filesystem safety
                 base_name = os.path.splitext(original_filename)[0]
-                new_filename = f"{timestamp_prefix}_{base_name}_{document_id}.json"
+                # Replace problematic characters with underscores
+                safe_base_name = "".join(c if c.isalnum() or c in '._-' else '_' for c in base_name)
+                # Truncate if too long (keep under reasonable filename length)
+                if len(safe_base_name) > 50:
+                    safe_base_name = safe_base_name[:50]
+                
+                # Use a short document ID suffix instead of full UUID for cleaner names
+                short_id = document_id[:8]
+                new_filename = f"{timestamp_prefix}_{safe_base_name}_{short_id}.json"
+                
+                # Enhanced metadata structure
+                enhanced_metadata = {
+                    **document_metadata.__dict__,
+                    "enhanced_extraction": {
+                        "enabled": self.use_enhanced_extraction,
+                        "extraction_metadata": extraction_metadata,
+                        "chunk_count": len(chunks),
+                        "chunks": [
+                            {
+                                "content": chunk.content,
+                                "chunk_type": chunk.chunk_type,
+                                "position": chunk.position,
+                                "heading_hierarchy": chunk.heading_hierarchy,
+                                "metadata": chunk.metadata
+                            }
+                            for chunk in chunks
+                        ] if chunks else []
+                    }
+                }
                 
                 # Convert metadata to JSON
-                json_content = json.dumps(document_metadata.__dict__, indent=2, cls=DateTimeEncoder)
+                json_content = json.dumps(enhanced_metadata, indent=2, cls=DateTimeEncoder)
                 
                 # Upload to OneDrive
                 user_email = self.config["user"]["email"]
@@ -224,7 +295,7 @@ class DocumentProcessor(BaseProcessor):
                         upload_path,
                         json_content.encode('utf-8')
                     )
-                    logger.info(f"Successfully uploaded metadata to OneDrive: {upload_path}")
+                    logger.info(f"Successfully uploaded enhanced metadata to OneDrive: {upload_path}")
                         
                 except Exception as e:
                     logger.error(f"Error saving metadata to OneDrive: {str(e)}")
@@ -239,6 +310,8 @@ class DocumentProcessor(BaseProcessor):
                 "filename": new_filename,
                 "metadata": document_metadata,
                 "content": text_content,
+                "chunks": chunks,
+                "extraction_metadata": extraction_metadata,
                 "file_path": file_path
             }
                 
@@ -246,6 +319,53 @@ class DocumentProcessor(BaseProcessor):
             error_msg = f"Failed to process document: {str(e)}"
             logger.error(f"Error processing document {file_path}: {error_msg}")
             raise ProcessingError(error_msg)
+    
+    async def _extract_document_text_enhanced(self, file_path: str, content_type: str, filename: str) -> tuple[str, list[DocumentChunk], dict]:
+        """Extract text content using enhanced extraction if available."""
+        chunks = []
+        extraction_metadata = {}
+        
+        if self.use_enhanced_extraction:
+            try:
+                logger.info(f"Using enhanced text extraction for {filename}")
+                
+                # Read file content
+                with open(file_path, 'rb') as f:
+                    file_content = f.read()
+                
+                # Use enhanced extractor
+                extraction_result = self.enhanced_extractor.extract_and_process(
+                    file_content, 
+                    content_type, 
+                    filename
+                )
+                
+                text_content = extraction_result.get('cleaned_text', '')
+                chunks = extraction_result.get('chunks', [])
+                extraction_metadata = extraction_result.get('metadata', {})
+                
+                # Log extraction results
+                logger.info(f"Enhanced extraction completed: {len(chunks)} chunks, "
+                          f"{len(text_content)} characters, "
+                          f"structure detected: {extraction_metadata.get('structure_metadata', {}).get('layout_detected', False)}")
+                
+                return text_content, chunks, extraction_metadata
+                
+            except Exception as e:
+                logger.warning(f"Enhanced extraction failed for {filename}: {e}, falling back to basic extraction")
+        
+        # Fallback to basic extraction
+        try:
+            text_content = await self._extract_document_text(file_path)
+            extraction_metadata = {
+                "extraction_method": "basic",
+                "enhanced_available": False,
+                "fallback_reason": "enhanced_extraction_disabled" if not self.use_enhanced_extraction else "enhanced_extraction_failed"
+            }
+            return text_content, chunks, extraction_metadata
+        except Exception as e:
+            logger.error(f"Basic text extraction also failed: {e}")
+            raise e
     
     async def _extract_document_text(self, file_path: str) -> str:
         """Extract text content from a document.

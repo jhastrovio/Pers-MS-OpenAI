@@ -2,9 +2,12 @@ import os
 import pytest
 import asyncio
 import tempfile
+import json
+from typing import Dict, Any
+from datetime import datetime
+from core.graph_1_1_0.main import GraphClient
 from core.processing_1_2_0.processors.document_processor import DocumentProcessor
 from core.utils.config import config, PROCESSING_CONFIG
-from core.utils.ms_graph_client import GraphClient
 
 LOG_PATH = "itest_document_processing.log"
 

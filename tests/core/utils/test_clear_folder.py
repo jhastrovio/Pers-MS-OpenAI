@@ -19,10 +19,9 @@ async def clear_data_folders(folders: Optional[List[str]] = None):
     data_folders = {
         "emails": config["onedrive"]["emails_folder"],
         "documents": config["onedrive"]["documents_folder"],
+        "attachments": config["onedrive"]["attachments_folder"],
         "processed_emails": config["onedrive"]["processed_emails_folder"],
-        "processed_documents": config["onedrive"]["processed_documents_folder"],
-        "processed_chunks": config["onedrive"]["processed_chunk_dir"],
-        "embeddings": config["onedrive"]["embeddings_dir"]
+        "processed_documents": config["onedrive"]["processed_documents_folder"]
     }
     
     # If specific folders are requested, filter the data_folders

@@ -71,7 +71,7 @@ config = {
         "documents_folder": "data_PMSA/documents_1",
         "attachments_folder": "data_PMSA/attachments_1",
         "processed_emails_folder": "data_PMSA/processed_emails_2",
-        "processed_documents_folder": "data_PMSA/processed_documents_2",
+        "processed_documents_folder": "data_PMSA/processed_documents_2"
     },
     
     # Processing configuration
@@ -107,12 +107,27 @@ PROCESSING_CONFIG = {
         "ATTACHMENTS": config["onedrive"]["attachments_folder"],
         "PROCESSED_EMAILS": config["onedrive"]["processed_emails_folder"],
         "PROCESSED_DOCUMENTS": config["onedrive"]["processed_documents_folder"],
-        "PROCESSED_CHUNKS": config["onedrive"]["processed_chunk_dir"],
-        "EMBEDDINGS": config["onedrive"]["embeddings_dir"],
-        "LOGS": config["onedrive"]["logs_dir"]
+        "FILE_LIST": config["onedrive"]["file_list"]
     },
     "user": {
         "email": config["user"]["email"]
+    },
+    # Enhanced extraction configuration
+    "ENHANCED_EXTRACTION": {
+        "ENABLED": True,  # Master switch for enhanced extraction
+        "USE_LAYOUT_ANALYSIS": True,  # Use pdfplumber for better PDF layout detection
+        "CHUNK_DOCUMENTS": True,  # Enable semantic chunking
+        "CHUNK_SIZE": 500,  # Target chunk size in tokens
+        "CHUNK_OVERLAP": 75,  # Overlap between chunks in tokens
+        "REMOVE_HEADERS_FOOTERS": True,  # Clean repetitive headers/footers
+        "REMOVE_PAGE_NUMBERS": True,  # Remove page number patterns
+        "REMOVE_BOILERPLATE": True,  # Remove common boilerplate text
+        "NORMALIZE_WHITESPACE": True,  # Fix whitespace and hyphenation
+        "FIX_ENCODING": True,  # Fix smart quotes, ligatures, etc.
+        "USE_OCR_FALLBACK": True,  # Use OCR for scanned documents
+        "OCR_CONFIDENCE_THRESHOLD": 0.7,  # Minimum OCR confidence
+        "PRESERVE_STRUCTURE": True,  # Maintain document structure in chunks
+        "PRESERVE_HEADINGS": True,  # Track heading hierarchy in chunks
     }
 }
 

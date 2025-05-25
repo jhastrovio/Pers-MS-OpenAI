@@ -14,7 +14,7 @@ from core.graph_1_1_0.main import GraphClient
 from core.processing_1_2_0.processors.email_processor import EmailProcessor
 from core.utils.config import config
 from core.utils.onedrive_utils import list_folder_contents
-from core.utils.ms_graph_client import GraphClient as MsGraphClient
+from core.utils.logging import configure_logging
 
 @pytest.mark.asyncio
 async def test_email_processor_integration():
@@ -32,8 +32,9 @@ async def test_email_processor_integration():
             pytest.skip(f"No .eml files found in OneDrive folder: {emails_folder}")
         for eml_file in eml_files:
             try:
-                ms_client = MsGraphClient()
-                eml_bytes = await ms_client.download_file_from_onedrive(emails_folder, eml_file["name"])
+                # Use the consolidated GraphClient
+                graph_client = GraphClient()
+                eml_bytes = await graph_client.download_file_from_onedrive(emails_folder, eml_file["name"])
                 assert eml_bytes, f"Failed to download .eml file: {eml_file['name']}"
                 result = await processor.process(eml_bytes, user_email)
                 print("METADATA:", json.dumps(result.get('metadata', {}), indent=2))
