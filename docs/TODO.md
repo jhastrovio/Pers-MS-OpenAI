@@ -26,6 +26,31 @@
 - [ ] **Advanced Structure Detection**: Enhance table and column detection
 - [ ] **Performance Optimization**: Optimize for large document batches
 
+## Dependency & Code Refactoring ✨ REFACTOR
+
+### Phase 1: Dependency Cleanup
+- [ ] **Switch to unstructured[pdf,docx]**: Refactor ingestion & partitioning to use the PDF+DOCX-only extra; remove all pdfplumber references
+- [ ] **Eliminate pdfplumber**: Delete imports and code paths; confirm OCR fallback via pypdf + pytesseract handles scanned docs
+- [ ] **Replace spaCy with tokenizers**: Remove SpaCy; integrate tokenizers for tokenization and semantic-chunk logic
+- [ ] **Swap pandas for pyexcel**: Update JSONL batching, table reads/exports to use pyexcel
+- [ ] **Remove unused dependencies**: Audit and remove any remaining heavy dependencies not in use
+
+### Phase 2: Code Updates
+- [ ] **Update import statements**: Replace all old library imports with new lightweight alternatives
+- [ ] **Refactor processing modules**: Update `core/processing_1_2_0/` to use new dependencies
+- [ ] **Update metadata extraction**: Ensure `core/graph_1_1_0/metadata_extractor.py` uses lightweight libraries
+- [ ] **Test compatibility**: Verify all existing functionality works with new dependencies
+
+### Phase 3: Infrastructure Updates  
+- [ ] **Requirements & CI Updates**: Commit revised requirements.txt; update Dockerfiles, CI pipelines, and build scripts
+- [ ] **Documentation updates**: Update README and docs to reflect new dependency choices
+- [ ] **Performance benchmarking**: Compare before/after performance and memory usage
+
+### Phase 4: Validation
+- [ ] **Smoke-test Refactored Pipeline**: Run end-to-end ingestion and RAG tests to validate no regressions
+- [ ] **Integration test suite**: Ensure all tests pass with new dependencies
+- [ ] **Production validation**: Test with real data to ensure quality maintained
+
 ## Vector Store Configuration
 - [ ] Confirm embedding settings (model, chunk size) and index parameters
 - [ ] **UTILIZE ENHANCED CHUNKS**: Configure vector store to leverage semantic chunks from enhanced processing
