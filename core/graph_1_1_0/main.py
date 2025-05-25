@@ -283,13 +283,13 @@ class GraphClient:
             with open(file_path, "rb") as file:
                 content = file.read()
             
-            # Use the modern upload_file method
+            # Use the modern upload_file method that returns the full response
             user_email = config.get("user", {}).get("email") or os.getenv('user_email')
             if not user_email:
                 raise ValueError("User email not found in config or environment")
                 
-            web_url = await self.upload_file(user_email, f"{folder}/{file_name}", content)
-            return {"webUrl": web_url}
+            file_response = await self.upload_file_with_response(user_email, f"{folder}/{file_name}", content)
+            return file_response
             
         except Exception as e:
             logger.error(f"Error uploading file to OneDrive: {str(e)}")
@@ -307,13 +307,13 @@ class GraphClient:
         if not user_email:
             raise ValueError("User email not found in config or environment")
             
-        # Use the modern upload_file method
-        web_url = await self.upload_file(
+        # Use the modern upload_file method that returns the full response
+        file_response = await self.upload_file_with_response(
             user_email, 
             f"{folder}/{file_name}", 
             email_content.encode("utf-8")
         )
-        return {"webUrl": web_url}
+        return file_response
 
     async def upload_file(self, user_email: str, file_path: str, content: bytes) -> str:
         """Upload a file to OneDrive.
@@ -325,6 +325,20 @@ class GraphClient:
             
         Returns:
             str: The web URL of the uploaded file
+        """
+        file_response = await self.upload_file_with_response(user_email, file_path, content)
+        return file_response.get("webUrl", "")
+
+    async def upload_file_with_response(self, user_email: str, file_path: str, content: bytes) -> Dict[str, Any]:
+        """Upload a file to OneDrive and return the full API response.
+        
+        Args:
+            user_email: The email address of the user
+            file_path: The path where the file should be saved in OneDrive
+            content: The file content as bytes
+            
+        Returns:
+            Dict: The full Microsoft Graph API response including id, webUrl, etc.
         """
         try:
             access_token = await self._get_access_token()
@@ -381,10 +395,11 @@ class GraphClient:
             response = await self.client.put(upload_url, headers=headers, content=content)
             response.raise_for_status()
             
-            # Get the web URL
+            # Return the full response data
             file_data = response.json()
-            web_url = file_data.get("webUrl")
-            if not web_url:
+            
+            # Validate that we got the expected fields
+            if not file_data.get("webUrl"):
                 logger.error("No webUrl in response: %s", file_data)
                 # Try to get the URL from the file metadata
                 file_id = file_data.get("id")
@@ -393,14 +408,12 @@ class GraphClient:
                     file_response = await self.client.get(file_url, headers=headers)
                     file_response.raise_for_status()
                     file_metadata = file_response.json()
-                    web_url = file_metadata.get("webUrl")
-                    if not web_url:
-                        raise Exception("Failed to get web URL from OneDrive response")
+                    return file_metadata
                 else:
                     raise Exception("Failed to get web URL from OneDrive response")
             
-            logger.info(f"Successfully uploaded file to {web_url}")
-            return web_url
+            logger.info(f"Successfully uploaded file to {file_data.get('webUrl')}")
+            return file_data
             
         except httpx.HTTPStatusError as e:
             error_data = e.response.json() if e.response.content else {}
