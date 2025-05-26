@@ -16,8 +16,9 @@ This roadmap tracks the implementation status and future work for the Pers MS Op
 
 - [x] 1.2.0: Data Processing
   - [x] 1.2.1: Email cleaning & enrichment
-  - [x] 1.2.2: Document text extraction
+  - [x] 1.2.2: Document text extraction (python-docx, python-pptx, openpyxl, pypdf)
   - [x] 1.2.3: Attachment processing
+  - [x] 1.2.4: OCR integration (pytesseract, Pillow)
 
 - [x] 1.3.0: Storage Layer
   - [x] 1.3.1: OneDrive folder structure setup
@@ -54,6 +55,12 @@ This roadmap tracks the implementation status and future work for the Pers MS Op
   - [ ] 2.2.2: Delta processing
   - [ ] 2.2.3: Re-indexing capability
 
+### NLP Enhancement
+- [ ] 2.3.0: Advanced Text Processing
+  - [ ] 2.3.1: NLTK integration for text analysis
+  - [ ] 2.3.2: Enhanced tokenization with tiktoken
+  - [ ] 2.3.3: Semantic chunking improvements
+
 ## 📁 File Organization
 
 ### Code Structure
@@ -78,6 +85,7 @@ core/
 | 1     | OpenAI Integration | In Progress (90%) | May 2024 |
 | 2     | Observability | Not Started | TBD |
 | 2     | Incremental Updates | Not Started | TBD |
+| 2     | NLP Enhancement | Not Started | TBD |
 
 ## 🔄 Version Control
 
@@ -94,3 +102,6 @@ core/
 - Regular backups of OneDrive data required
 - Integration tests have been implemented for all Phase 1 components
 - Vercel deployment provides serverless API hosting with automatic scaling
+- Document processing includes OCR capabilities for scanned documents
+- MSAL authentication is required for Microsoft Graph API access
+- NLTK and tiktoken are used for advanced text processing

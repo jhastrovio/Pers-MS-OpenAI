@@ -24,6 +24,21 @@ ENV/
 # Logs
 logs/
 *.log
+app.log
+*_workflow_integration.log
+itest_*.log
+test_*.log
+
+# Test artifacts
+.coverage
+.pytest_cache/
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
 
 # Environment and Secrets
 .env
@@ -42,3 +57,7 @@ data/
 downloads/
 downloads_onedrive/
 attachments/
+
+# Build artifacts
+*.egg-info/
+*.egg
