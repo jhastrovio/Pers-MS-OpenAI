@@ -1,36 +1,25 @@
-fastapi==0.104.1
-uvicorn[standard]==0.24.0
-python-dotenv==1.1.0
-pydantic==2.4.2
-httpx==0.25.1
-msal==1.24.0
+# Full development requirements - includes all dependencies for local development and testing
+# For minimal deployment dependencies, see api/requirements.txt
 
-# Office formats
-python-docx>=1.1.0,<2.0
-python-pptx==0.6.21
-openpyxl==3.1.2
+fastapi~=0.104.1
+uvicorn[standard]~=0.24.0
+pydantic~=2.4.2
+httpx~=0.25
+msal~=1.24
 
-# PDF parsing (no unstructured)
-pypdf==4.2.0
+python-docx>=1.1,<2.0
+python-pptx~=0.6.21
+openpyxl~=3.1
+pypdf~=4.2
 
-# Excel replacement
-pyexcel==0.7.0
+beautifulsoup4~=4.12
 
-# HTTP & scraping
-chardet==5.2.0
-beautifulsoup4==4.12.3
+openai~=1.78.1
+tiktoken~=0.5
+orjson~=3.9
+tokeniser~=0.1
 
-# OpenAI & tokenization
-openai==1.78.1
-tiktoken==0.5.2
-tokenizers==0.13.3
+pytesseract~=0.3
+Pillow~=10.1
 
-# Lightweight JSON
-orjson==3.9.1
-
-# OCR
-pytesseract==0.3.10
-Pillow==10.1.0
-
-# Text utilities
-nltk==3.8.1
+nltk~=3.8

@@ -1,3 +1,7 @@
+# Minimal deployment requirements for Vercel serverless functions
+# Optimized for fast cold starts and reduced bundle size
+# For full development dependencies, see ../requirements.txt
+
 fastapi>=0.104.1
 uvicorn>=0.24.0
 python-dotenv>=1.1.0

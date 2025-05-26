@@ -1,4 +1,5 @@
 import os
+import pytest
 from msal import ConfidentialClientApplication
 from core.utils.config import config
 
