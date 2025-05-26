@@ -4,6 +4,6 @@
 
 fastapi>=0.104.1
 uvicorn>=0.24.0
-python-dotenv>=1.1.0
+python-dotenv>=1.1.0    # ensure your app can do `load_dotenv()` in production
 pydantic>=2.4.2
-openai>=1.78.1 
+openai>=1.78.1

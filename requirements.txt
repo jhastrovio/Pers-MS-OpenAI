@@ -15,8 +15,6 @@ pypdf~=4.2
 beautifulsoup4~=4.12
 
 openai~=1.78.1
-tiktoken~=0.5
-orjson~=3.9
 tokeniser==0.0.3
 
 pytesseract~=0.3
