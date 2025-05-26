@@ -46,7 +46,7 @@ class Ask(BaseModel):
     query: str = Field(..., description="The user's question or message to the assistant")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "conversation_id": None,
                 "query": "Hello, can you help me with a question?"
@@ -106,7 +106,7 @@ class AssistantConfig(BaseModel):
     file_ids: Optional[List[str]] = Field(None, description="List of file IDs to attach to the assistant")
     
     class Config:
-        schema_extra = {
+        json_schema_extra = {
             "example": {
                 "name": "Knowledge-Assistant",
                 "model": "gpt-4-turbo-preview",
