@@ -43,6 +43,9 @@ class DocumentProcessor(BaseProcessor):
         # State file path from config
         self.state_file = self.config["FOLDERS"].get("FILE_LIST", config["onedrive"]["file_list"])
         self.processing_state = None
+
+        # Simple cache for OneDrive web URLs
+        self._url_cache: Dict[str, str] = {}
         
         # Initialize enhanced text extractor
         extraction_config = ExtractionConfig(
@@ -468,27 +471,31 @@ class DocumentProcessor(BaseProcessor):
             Web URL of the file or empty string if not found
         """
         try:
+            if file_path in self._url_cache:
+                return self._url_cache[file_path]
+
             user_email = self.config["user"]["email"]
-            
+
             # Get the file metadata from OneDrive
             access_token = await self.graph_client._get_access_token()
             headers = {"Authorization": f"Bearer {access_token}"}
-            
+
             # Normalize file path for OneDrive API
-            file_path = file_path.replace('\\', '/').strip('/')
-            url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/{file_path}"
-            
+            normalized = file_path.replace('\\', '/').strip('/')
+            url = f"https://graph.microsoft.com/v1.0/users/{user_email}/drive/root:/{normalized}"
+
             response = await self.graph_client.client.get(url, headers=headers)
             response.raise_for_status()
-            
+
             # Get the web URL from the response
             file_data = response.json()
             web_url = file_data.get("webUrl")
             if not web_url:
                 logger.error(f"No webUrl in response for {file_path}: {file_data}")
                 return ""
-                
+
             logger.info(f"Got web URL for {file_path}: {web_url}")
+            self._url_cache[file_path] = web_url
             return web_url
             
         except Exception as e:

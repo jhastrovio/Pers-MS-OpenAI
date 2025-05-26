@@ -132,4 +132,29 @@ async def test_detect_content_type(document_processor):
     assert document_processor._detect_content_type("test.pdf") == "application/pdf"
     assert document_processor._detect_content_type("test.docx") == "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
     assert document_processor._detect_content_type("test.txt") == "text/plain"
-    assert document_processor._detect_content_type("test.xyz") == "application/octet-stream" 
+    assert document_processor._detect_content_type("test.xyz") == "application/octet-stream"
+
+
+@pytest.mark.asyncio
+async def test_get_file_web_url_caches_result(mock_graph_client, test_config):
+    """_get_file_web_url should cache results to avoid repeated Graph calls."""
+    mock_graph_client._get_access_token = AsyncMock(return_value="token")
+
+    class _Resp:
+        def json(self):
+            return {"webUrl": "https://example.com/doc"}
+
+        def raise_for_status(self):
+            pass
+
+    mock_graph_client.client = Mock()
+    mock_graph_client.client.get = AsyncMock(return_value=_Resp())
+
+    with patch("core.processing_1_2_0.processors.document_processor.GraphClient", return_value=mock_graph_client):
+        processor = DocumentProcessor(test_config)
+        url1 = await processor._get_file_web_url("path/to/file.pdf")
+        url2 = await processor._get_file_web_url("path/to/file.pdf")
+
+    assert url1 == "https://example.com/doc"
+    assert url2 == url1
+    mock_graph_client.client.get.assert_awaited_once()
