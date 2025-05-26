@@ -11,7 +11,7 @@
 - [ ] Set up alerts for document limit
 - [ ] Implement chunk-aware retrieval
 - [ ] Add heading hierarchy filtering
-- [ ] Enable response streaming
+ - [x] Enable response streaming
 - [ ] Test retrieval quality improvements
 
 ## 3. Document Processing
