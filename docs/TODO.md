@@ -11,7 +11,7 @@
 - [ ] Set up alerts for document limit
 - [ ] Implement chunk-aware retrieval
 - [ ] Add heading hierarchy filtering
-- [ ] Enable response streaming
+ - [x] Enable response streaming
 - [ ] Test retrieval quality improvements
 
 ## 3. Document Processing
@@ -26,7 +26,7 @@
 
 ## 4. NLP Enhancement
 - [ ] Implement NLTK text analysis
-- [ ] Optimize tokenization with tiktoken
+- [x] Optimize tokenization with tiktoken
 - [ ] Enhance semantic chunking
 
 ## 5. Infrastructure
