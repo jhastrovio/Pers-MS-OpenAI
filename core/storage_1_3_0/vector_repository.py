@@ -4,8 +4,8 @@ import asyncio
 import logging
 from core.utils.logging import configure_logging
 import os
+import json
 
-import orjson
 from openai import OpenAI
 from openai.types.file_object import FileObject
 
@@ -46,10 +46,10 @@ class VectorRepository:
             attrs["recipients"] = ",".join(str(r) for r in recipients)[:512]
 
         if meta.get("last_modified") and meta.get("created_at"):
-            attrs["dates"] = orjson.dumps({
+            attrs["dates"] = json.dumps({
                 "c": meta["created_at"][:19],
                 "m": meta["last_modified"][:19]
-            }).decode()
+            })
 
         if parent_id := meta.get("parent_email_id"):
             attrs["rel"] = str(parent_id)
@@ -81,7 +81,7 @@ class VectorRepository:
                 
         # If we can't find text content in expected fields, use the entire metadata as text
         # This is a fallback to ensure we always have something to upload
-        return orjson.dumps(meta).decode('utf-8')
+        return json.dumps(meta)
 
     async def upload_document(self, file_info: Dict[str, Any]) -> bool:
         """Upload a single document and its metadata to the vector store."""
@@ -100,7 +100,7 @@ class VectorRepository:
             
             # Parse JSON content
             try:
-                meta = orjson.loads(content)
+                meta = json.loads(content)
                 # Log a sample of the metadata to help diagnose issues
                 logger.info(f"Metadata keys in {file_name}: {list(meta.keys())[:5]}...")
             except Exception as e:

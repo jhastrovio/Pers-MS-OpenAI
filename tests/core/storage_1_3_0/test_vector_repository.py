@@ -1,7 +1,7 @@
 import pytest
 import asyncio
 from pathlib import Path
-import orjson
+import json
 from datetime import datetime
 
 from openai import OpenAI
@@ -37,7 +37,7 @@ async def test_vector_repository_upload():
     test_dir = Path("test_data")
     test_dir.mkdir(exist_ok=True)
     test_file = test_dir / "test_email.json"
-    test_file.write_bytes(orjson.dumps(test_data))
+    test_file.write_text(json.dumps(test_data))
 
     try:
         # Initialize repository with the new vector store ID
